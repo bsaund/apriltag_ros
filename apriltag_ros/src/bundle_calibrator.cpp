@@ -22,35 +22,35 @@ bool BundleCalibrator::tooSimilarToPrevious(const AprilTagDetectionArray &query)
     
     const AprilTagDetectionArray prev = calibration_data.back();
 
-    std::vector<int> q_ids;
-    for(const auto &tag: query.detections)
     {
-        q_ids.push_back(tag.id[0]);
+        //Check if detected tags are the different
+        if(prev.detections.size() != query.detections.size())
+        {
+            return false;
+        }
+        for(size_t i=0; i<prev.detections.size(); i++)
+        {
+            if(prev.detections[i].id[0] != query.detections[i].id[0])
+            {
+                return false;
+            }
+        }
     }
 
-    std::vector<int> p_ids;
-    for(const auto &tag: prev.detections)
+    for(size_t i=0; i<prev.detections.size(); i++)
     {
-        p_ids.push_back(tag.id[0]);
-    }
+        const auto &pp = prev.detections[i].pose.pose.pose.position;
+        const auto &qp = query.detections[i].pose.pose.pose.position;
 
-    if(q_ids.size() != p_ids.size())
-    {
-        return false;
-    }
-    
-    std::sort(q_ids.begin(), q_ids.end());
-    std::sort(p_ids.begin(), p_ids.end());
-
-    for(size_t i=0; i<q_ids.size(); i++)
-    {
-        if(q_ids[i] != p_ids[i])
+        double d_sq = (pp.x - qp.x)*(pp.x-qp.x) +
+            (pp.y - qp.y)*(pp.x-qp.y) +
+            (pp.z - qp.z)*(pp.x-qp.z);
+        double tag_size = prev.detections[i].size[0];
+        if(d_sq > (tag_size * tag_size))
         {
             return false;
         }
     }
-
-
     
 
     return true;
@@ -74,7 +74,11 @@ void BundleCalibrator::tagDetectionCallback(const AprilTagDetectionArray &tag_de
         return;
     }
 
+    auto detection_sort_fn = [](const AprilTagDetection &lhs, const AprilTagDetection &rhs)
+        {return lhs.id[0] < rhs.id[0];};
 
+
+    std::sort(tags.detections.begin(), tags.detections.end(), detection_sort_fn);
 
     if(!tooSimilarToPrevious(tags))
     {
