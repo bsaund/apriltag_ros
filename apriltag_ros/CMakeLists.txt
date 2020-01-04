@@ -46,6 +46,10 @@ add_compile_options("-O3" "-funsafe-loop-optimizations" "-fsee" "-funroll-loops"
 #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mcpu=cortex-a9 -mfpu=neon -mtune=cortex-a9 -mvectorize-with-neon-quad -ffast-math ")
 # endif()
 
+
+catkin_python_setup()
+
+
 add_message_files(
   FILES
   AprilTagDetection.msg
@@ -62,7 +66,7 @@ generate_messages(
   geometry_msgs
   sensor_msgs
   std_msgs
-)
+  )
 
 catkin_package(
   INCLUDE_DIRS include

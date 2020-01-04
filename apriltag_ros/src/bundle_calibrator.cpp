@@ -22,8 +22,8 @@ bool BundleCalibrator::tooSimilarToPrevious(const AprilTagDetectionArray &query)
     
     const AprilTagDetectionArray prev = calibration_data.back();
 
+    //Check if detected tags are different
     {
-        //Check if detected tags are the different
         if(prev.detections.size() != query.detections.size())
         {
             return false;
@@ -37,6 +37,7 @@ bool BundleCalibrator::tooSimilarToPrevious(const AprilTagDetectionArray &query)
         }
     }
 
+    //Check if detected tags (camera) have moved significantly since previous measurement
     for(size_t i=0; i<prev.detections.size(); i++)
     {
         const auto &pp = prev.detections[i].pose.pose.pose.position;
@@ -51,7 +52,6 @@ bool BundleCalibrator::tooSimilarToPrevious(const AprilTagDetectionArray &query)
             return false;
         }
     }
-    
 
     return true;
 };
