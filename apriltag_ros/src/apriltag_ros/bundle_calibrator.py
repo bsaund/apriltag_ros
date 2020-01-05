@@ -6,6 +6,9 @@ class BundleCalibrator:
         self.tag_sub = rospy.Subscriber("tag_detections", AprilTagDetectionArray, self.tag_detection_callback)
         self.calibration_data = []
 
+    def get_unique_tags_seen(self):
+        tags = [d.id[0] for arr in self.calibration_data for d in arr.detections]
+        return sorted(list(set(tags)))
 
     def isTooSimilarToPrevious(self, tags):
         if len(self.calibration_data) == 0:

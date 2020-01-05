@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
+ <class>Apriltag Bundle Calibration</class>
  <widget class="QWidget" name="Form">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>700</width>
-    <height>600</height>
+    <width>1000</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Apriltag Bundle Calibration</string>
   </property>
   <widget class="QLabel" name="tags_detected">
    <property name="geometry">
@@ -61,6 +61,21 @@
    <property name="text">
     <string>Calibrate</string>
    </property>
+  </widget>
+  <widget class="QWidget" name="tag_selection">
+    <property name="geometry">
+      <rect>
+        <x>700</x>
+        <y>100</y>
+        <width>200</width>
+        <height>600</height>
+      </rect>
+    </property>
+    <widget class="QLabel" name="selected_tags_heading">
+      <property name="text">
+        <string>Use in Bundle Calibration</string>
+      </property>
+    </widget>
   </widget>
  </widget>
  <resources/>

@@ -4,7 +4,8 @@ import rospkg
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget
+from python_qt_binding.QtCore import pyqtSignal
+from python_qt_binding.QtWidgets import QWidget, QCheckBox, QButtonGroup
 from python_qt_binding.QtGui import QPixmap, QImage
 
 from apriltag_ros.msg import *
@@ -33,15 +34,11 @@ class BundleCalibration(Plugin):
             print 'arguments: ', args
             print 'unknowns: ', unknowns
 
-        # Create QWidget
-        self._widget = BundleCalibrationWidget()
         # Get path to UI file which should be in the "resource" folder of this package
         ui_file = os.path.join(rospkg.RosPack().get_path('apriltag_ros'), 'resource', 'BundleCalibration.ui')
-        # Extend the widget with all attributes and children from UI file
-        loadUi(ui_file, self._widget)
-        self._widget.init()
-        # Give QObjects reasonable names
-        self._widget.setObjectName('Bundle Calibration UI')
+
+        # Create QWidget
+        self._widget = BundleCalibrationWidget(ui_file)
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
         # plugins at once. Also if you open multiple instances of your 
@@ -54,6 +51,7 @@ class BundleCalibration(Plugin):
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
+        self._widget.shutdown()
         del self._widget
 
 
@@ -74,15 +72,34 @@ class BundleCalibration(Plugin):
 
         
 class BundleCalibrationWidget(QWidget):
-    def __init__(self):
+    make_checkbox_signal = pyqtSignal()
+    
+    def __init__(self, ui_file):
         super(BundleCalibrationWidget, self).__init__()
+        self.setObjectName('Bundle Calibration UI')
+        loadUi(ui_file, self)
 
         self.calibrator = BundleCalibrator()
         self.bridge = CvBridge()
 
-    def init(self):
+
         self.tag_sub = rospy.Subscriber("tag_detections", AprilTagDetectionArray, self.tag_detection_callback)
         self.tag_image_sub = rospy.Subscriber("tag_detections_image", Image, self.tag_image_callback)
+        self.checkboxes = QButtonGroup()
+        self.checkboxes.setExclusive(False)
+        self.checkbox_offset = 40
+        # self.make_checkbox(0)
+
+        # self.make_checkbox_signal = SIGNAL("changeUI(PyQt_PyObject)")
+        self.make_checkbox_signal.connect(self.sync_checkboxes)
+        # self.connect(self, self.make_checkbox_signal, self.make_checkbox)
+        self.make_checkbox(1)
+        self.make_checkbox(3)
+
+
+    def shutdown(self):
+        self.tag_sub = None
+        self.tag_image_sub = None
 
     def tag_image_callback(self, tag_image):
         cv_img = self.bridge.imgmsg_to_cv2(tag_image)
@@ -104,3 +121,24 @@ class BundleCalibrationWidget(QWidget):
         tags.sort()
         self.tags_detected.setText("Tags Detected: " + str(tags))
         self.num_calibration_points.setText("Calibration Points: " + str(len(self.calibrator.calibration_data)))
+        self.make_checkbox_signal.emit()
+
+    def sync_checkboxes(self):
+        for t in self.calibrator.get_unique_tags_seen():
+            if self.checkboxes.button(t) is None:
+                # self.emit(SIGNAL("changeUI(PyQt_PyObject)"), t)
+                self.make_checkbox(t)
+
+    def make_checkbox(self, id):
+
+        checkbox = QCheckBox("Checkbox", self.tag_selection)
+        # checkbox.moveToThread(QThread())
+        # checkbox = QCheckBox("Checkbox")
+        checkbox.setText("tag " + str(id))
+        checkbox.move(0, self.checkbox_offset)
+        self.checkbox_offset += 25
+        checkbox.setChecked(True)
+        self.checkboxes.addButton(checkbox, id)
+        print("Making checkbox" + str(id))
+
+
