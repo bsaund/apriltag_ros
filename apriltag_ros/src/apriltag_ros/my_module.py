@@ -93,8 +93,6 @@ class BundleCalibrationWidget(QWidget):
         # self.make_checkbox_signal = SIGNAL("changeUI(PyQt_PyObject)")
         self.make_checkbox_signal.connect(self.sync_checkboxes)
         # self.connect(self, self.make_checkbox_signal, self.make_checkbox)
-        self.make_checkbox(1)
-        self.make_checkbox(3)
 
 
     def shutdown(self):
@@ -132,13 +130,15 @@ class BundleCalibrationWidget(QWidget):
     def make_checkbox(self, id):
 
         checkbox = QCheckBox("Checkbox", self.tag_selection)
-        # checkbox.moveToThread(QThread())
         # checkbox = QCheckBox("Checkbox")
+
         checkbox.setText("tag " + str(id))
         checkbox.move(0, self.checkbox_offset)
         self.checkbox_offset += 25
         checkbox.setChecked(True)
+        checkbox.show()
         self.checkboxes.addButton(checkbox, id)
         print("Making checkbox" + str(id))
+        self.tag_selection.move(700, 100)
 
 
