@@ -1,6 +1,25 @@
 <launch>
-  <node pkg="apriltag_ros" type="apriltag_ros_calibrate_bundle_service" name="apriltag_ros_calibration_service" output="screen">
+  <!-- <node pkg="apriltag_ros" type="apriltag_ros_calibrate_bundle_service" name="apriltag_ros_calibration_service" output="screen"> -->
+  <!-- </node> -->
+  <!-- <node pkg="apriltag_ros" type="calibrate_bundle.py" name="apriltag_ros_calibration_gui"> -->
+  <!-- </node> -->
+  <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+  <arg name="node_namespace" default="apriltag_ros_bundle_calibration_node" />
+  <arg name="camera_name" default="/camera_rect" />
+  <arg name="camera_frame" default="camera" />
+  <arg name="image_topic" default="image_rect" />
+
+  <!-- Set parameters -->
+  <rosparam command="load" file="$(find apriltag_ros)/config/settings.yaml" ns="$(arg node_namespace)" />
+  <rosparam command="load" file="$(find apriltag_ros)/config/tags.yaml" ns="$(arg node_namespace)" />
+  
+  <node pkg="apriltag_ros" type="apriltag_ros_calibrate_bundle" name="$(arg node_namespace)" clear_params="true" output="screen" launch-prefix="$(arg launch_prefix)" >
+    <!-- Remap topics from those used in code to those on the ROS network -->
+    <remap from="image_rect" to="$(arg camera_name)/$(arg image_topic)" />
+    <remap from="camera_info" to="$(arg camera_name)/camera_info" />
+
+    <param name="camera_frame" type="str" value="$(arg camera_frame)" />
+    <param name="publish_tag_detections_image" type="bool" value="true" />      <!-- default: false -->
   </node>
-  <node pkg="apriltag_ros" type="calibrate_bundle.py" name="apriltag_ros_calibration_gui">
-  </node>
+
 </launch>

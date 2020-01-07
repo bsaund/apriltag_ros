@@ -115,9 +115,6 @@ target_link_libraries(${PROJECT_NAME}_continuous_detector ${PROJECT_NAME}_common
 add_library(${PROJECT_NAME}_single_image_detector src/single_image_detector.cpp)
 target_link_libraries(${PROJECT_NAME}_single_image_detector ${PROJECT_NAME}_common ${catkin_LIBRARIES})
 
-add_library(${PROJECT_NAME}_bundle_calibrator src/bundle_calibrator.cpp)
-target_link_libraries(${PROJECT_NAME}_bundle_calibrator ${PROJECT_NAME}_common ${catkin_LIBRARIES})
-
 add_executable(${PROJECT_NAME}_continuous_node src/${PROJECT_NAME}_continuous_node.cpp)
 add_dependencies(${PROJECT_NAME}_continuous_node ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_continuous_node ${PROJECT_NAME}_continuous_detector ${catkin_LIBRARIES})
@@ -134,15 +131,19 @@ target_link_libraries(${PROJECT_NAME}_single_image_client_node ${PROJECT_NAME}_c
 # add_executable(${PROJECT_NAME}_calibrate_bundle_node src/${PROJECT_NAME}_calibrate_bundle_node.cpp)
 # target_link_libraries(${PROJECT_NAME}_calibrate_bundle_node ${PROJECT_NAME}_bundle_calibrator ${catkin_LIBRARIES})
 
-add_executable(${PROJECT_NAME}_calibrate_bundle_service src/calibrate_bundle_service.cpp)
-target_link_libraries(${PROJECT_NAME}_calibrate_bundle_service
-  ${catkin_LIBRARIES})
-add_dependencies(${PROJECT_NAME}_calibrate_bundle_service ${PROJECT_NAME}_generate_messages_cpp)
+# add_executable(${PROJECT_NAME}_calibrate_bundle_service src/calibrate_bundle_service.cpp)
+# target_link_libraries(${PROJECT_NAME}_calibrate_bundle_service
+#   ${catkin_LIBRARIES})
+# add_dependencies(${PROJECT_NAME}_calibrate_bundle_service ${PROJECT_NAME}_generate_messages_cpp)
 
 # add_executable(bundle_calibration_gui src/bundle_calibration_gui.cpp)
 # target_link_libraries(bundle_calibration_gui ${PROJECT_NAME}_bundle_calibrator ${catkin_LIBRARIES})
 
 if(Qt5_FOUND)
+  add_library(${PROJECT_NAME}_bundle_calibrator src/bundle_calibrator.cpp)
+  target_link_libraries(${PROJECT_NAME}_bundle_calibrator ${PROJECT_NAME}_common ${catkin_LIBRARIES})
+
+  
   include_directories(${Qt5Core_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS})
   include_directories(${CMAKE_CURRENT_BINARY_DIR}) # Needed to pick up ui files in build dir
 
@@ -151,7 +152,11 @@ if(Qt5_FOUND)
   QT5_WRAP_UI(QT_UI_H ui/bundle_calibration.ui)
   QT5_WRAP_CPP(QT_MOC_HPP ${QT_MOC})
   
-  add_executable(${PROJECT_NAME}_calibrate_bundle src/bundle_calibration_gui.cpp ${QT_UI_H} ${QT_MOC_HPP})
+  add_executable(${PROJECT_NAME}_calibrate_bundle
+    src/bundle_calibration_gui.cpp
+    src/bundle_calibration_qt_ros.cpp
+    ${QT_UI_H}
+    ${QT_MOC_HPP})
   target_link_libraries(${PROJECT_NAME}_calibrate_bundle Qt5::Widgets ${catkin_LIBRARIES})
 endif()
 

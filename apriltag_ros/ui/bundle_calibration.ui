@@ -1,83 +1,87 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ApriltagBundleCalibration</class>
- <widget class="QWidget" name="Form">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>1000</width>
-    <height>800</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Apriltag Bundle Calibration</string>
-  </property>
-  <widget class="QLabel" name="tags_detected">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>40</y>
-     <width>200</width>
-     <height>27</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Tags Detected: []</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="num_calibration_points">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>70</y>
-     <width>200</width>
-     <height>27</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Calibration Points: []</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="camera_img">
+  <class>ApriltagBundleCalibration</class>
+  <widget class="QMainWindow" name="ApriltagBundleCalibration">
     <property name="geometry">
       <rect>
-        <x>10</x>
-        <y>100</y>
-        <width>640</width>
-        <height>480</height>
+        <x>0</x>
+        <y>0</y>
+        <width>1000</width>
+        <height>800</height>
       </rect>
     </property>
-  </widget>
-  <widget class="QPushButton" name="start_calibration">
-   <property name="geometry">
-    <rect>
-     <x>100</x>
-     <y>600</y>
-     <width>98</width>
-     <height>27</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Calibrate</string>
-   </property>
-  </widget>
-  <widget class="QWidget" name="tag_selection">
-    <property name="geometry">
-      <rect>
-        <x>700</x>
-        <y>100</y>
-        <width>200</width>
-        <height>600</height>
-      </rect>
+    <property name="windowTitle">
+      <string>Apriltag Bundle Calibration</string>
     </property>
-    <widget class="QLabel" name="selected_tags_heading">
-      <property name="text">
-        <string>Use in Bundle Calibration</string>
-      </property>
+    <widget class="QWidget" name="centralwidget">
+      
+      <widget class="QLabel" name="tags_detected">
+        <property name="geometry">
+          <rect>
+            <x>10</x>
+            <y>40</y>
+            <width>200</width>
+            <height>27</height>
+          </rect>
+        </property>
+        <property name="text">
+          <string>Tags Detected: []</string>
+        </property>
+      </widget>
+      <widget class="QLabel" name="num_calibration_points">
+        <property name="geometry">
+          <rect>
+            <x>10</x>
+            <y>70</y>
+            <width>200</width>
+            <height>27</height>
+          </rect>
+        </property>
+        <property name="text">
+          <string>Calibration Points: []</string>
+        </property>
+      </widget>
+      <widget class="QLabel" name="camera_img">
+        <property name="geometry">
+          <rect>
+            <x>10</x>
+            <y>100</y>
+            <width>640</width>
+            <height>480</height>
+          </rect>
+        </property>
+      </widget>
+      <widget class="QPushButton" name="button_start_calibration">
+        <property name="geometry">
+          <rect>
+            <x>100</x>
+            <y>600</y>
+            <width>98</width>
+            <height>27</height>
+          </rect>
+        </property>
+        <property name="text">
+          <string>Calibrate</string>
+        </property>
+      </widget>
+      <widget class="QWidget" name="tag_selection">
+        <property name="geometry">
+          <rect>
+            <x>700</x>
+            <y>100</y>
+            <width>200</width>
+            <height>600</height>
+          </rect>
+        </property>
+        <widget class="QLabel" name="selected_tags_heading">
+          <property name="text">
+            <string>Use in Bundle Calibration</string>
+          </property>
+        </widget>
+      </widget>
     </widget>
   </widget>
- </widget>
+
  <resources/>
  <connections/>
 </ui>
