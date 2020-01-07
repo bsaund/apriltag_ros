@@ -29,42 +29,23 @@ namespace apriltag_ros {
 	QNode(int argc, char** argv );
 	virtual ~QNode();
 	bool init();
-	// bool init(const std::string &master_url, const std::string &host_url);
 	void run();
-
-	/*********************
-         ** Logging
-         **********************/
-	// enum LogLevel {
-        //     Debug,
-        //     Info,
-        //     Warn,
-        //     Error,
-        //     Fatal
-        // };
-
-	// QStringListModel* loggingModel() { return &logging_model; }
-	// void log( const LogLevel &level, const std::string &msg);
         void imageCallback(const sensor_msgs::ImageConstPtr& image_rect,
                            const sensor_msgs::CameraInfoConstPtr& camera_info);
 
 
     Q_SIGNALS:
-	// void loggingUpdated();
         void rosShutdown();
 
     protected:
-        std::shared_ptr<image_transport::ImageTransport> it_;
+        std::unique_ptr<image_transport::ImageTransport> it_;
         image_transport::CameraSubscriber camera_image_subscriber_;
+        std::unique_ptr<TagDetector> tag_detector_;
+        cv_bridge::CvImagePtr cv_image_;
 
-
-    // private:
+    private:
         int init_argc;
         char** init_argv;
-    //     ros::Publisher chatter_publisher;
-    //     QStringListModel logging_model;
-            
-
     };
 
 }  // namespace apriltag_ros

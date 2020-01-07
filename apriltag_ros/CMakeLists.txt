@@ -157,7 +157,7 @@ if(Qt5_FOUND)
     src/bundle_calibration_qt_ros.cpp
     ${QT_UI_H}
     ${QT_MOC_HPP})
-  target_link_libraries(${PROJECT_NAME}_calibrate_bundle Qt5::Widgets ${catkin_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME}_calibrate_bundle Qt5::Widgets ${PROJECT_NAME}_common ${catkin_LIBRARIES})
 endif()
 
 
