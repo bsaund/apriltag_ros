@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="apriltag_ros" type="apriltag_ros_calibrate_bundle_service" name="apriltag_ros_calibration_service" output="screen">
+  </node>
+  <node pkg="apriltag_ros" type="calibrate_bundle.py" name="apriltag_ros_calibration_gui">
+  </node>
+</launch>

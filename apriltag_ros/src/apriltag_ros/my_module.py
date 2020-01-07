@@ -5,11 +5,12 @@ import rospkg
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import pyqtSignal
-from python_qt_binding.QtWidgets import QWidget, QCheckBox, QButtonGroup
+from python_qt_binding.QtWidgets import QWidget, QCheckBox, QButtonGroup, QMessageBox
 from python_qt_binding.QtGui import QPixmap, QImage
 
 from apriltag_ros.msg import *
 from apriltag_ros.bundle_calibrator import BundleCalibrator
+
 
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -78,7 +79,6 @@ class BundleCalibrationWidget(QWidget):
         super(BundleCalibrationWidget, self).__init__()
         self.setObjectName('Bundle Calibration UI')
         loadUi(ui_file, self)
-
         self.calibrator = BundleCalibrator()
         self.bridge = CvBridge()
 
@@ -93,6 +93,8 @@ class BundleCalibrationWidget(QWidget):
         # self.make_checkbox_signal = SIGNAL("changeUI(PyQt_PyObject)")
         self.make_checkbox_signal.connect(self.sync_checkboxes)
         # self.connect(self, self.make_checkbox_signal, self.make_checkbox)
+
+        self.start_calibration.clicked.connect(self.on_calibrate)
 
 
     def shutdown(self):
@@ -138,7 +140,18 @@ class BundleCalibrationWidget(QWidget):
         checkbox.setChecked(True)
         checkbox.show()
         self.checkboxes.addButton(checkbox, id)
-        print("Making checkbox" + str(id))
         self.tag_selection.move(700, 100)
 
+    def on_calibrate(self):
 
+        ids_to_calibrate = [self.checkboxes.id(b) for b in self.checkboxes.buttons() if b.isChecked()]
+        try:
+            self.calibrator.calibrate(ids_to_calibrate)
+        except rospy.ROSException:
+            QMessageBox.critical(self, 'Calibration Failure',
+                                 'Calibration Service is not running. Cannot Calibrate')
+            return
+
+        QMessageBox.information(self, 'Calibration Success',
+                                'Bundle has been calibrated')
+        

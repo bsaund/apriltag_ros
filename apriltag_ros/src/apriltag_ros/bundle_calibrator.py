@@ -1,4 +1,5 @@
-from apriltag_ros.msg import AprilTagDetectionArray, AprilTagDetection
+from apriltag_ros.msg import AprilTagDetectionArray
+from apriltag_ros.srv import CalibrateBundle, CalibrateBundleRequest
 import rospy
 
 class BundleCalibrator:
@@ -52,3 +53,33 @@ class BundleCalibrator:
 
         self.calibration_data.append(tags)
 
+
+    def filter_calibration_data(self, selected_ids):
+        filtered = []
+        for datum in self.calibration_data:
+             filtered_datum = AprilTagDetectionArray()
+             filtered_datum.header = datum.header
+             filtered_datum.detections = [t for t in datum.detections if t.id[0] in selected_ids]
+             if len(filtered_datum.detections) > 1:
+                 filtered.append(filtered_datum)
+        return filtered
+    
+
+
+    def calibrate(self, ids_to_calibrate):
+        try:
+            rospy.wait_for_service('calibrate_bundle', 2)
+        except rospy.ROSException as e:
+            rospy.loginfo('calibrate bundle service not running')
+            raise e
+
+        calibration_service = rospy.ServiceProxy('calibrate_bundle', CalibrateBundle)
+        print("Calling service")
+        req = CalibrateBundleRequest()
+
+        
+
+        req.calibration_data = self.filter_calibration_data(ids_to_calibrate)
+        
+        resp = calibration_service(req)
+        print("Service responded")
