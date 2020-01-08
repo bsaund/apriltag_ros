@@ -34,11 +34,15 @@ namespace apriltag_ros {
         QPixmap& getPixmap();
         std::set<int> visible_tags;
 
+        std::vector<std::unique_ptr<zarray_t> > calibration_data;
+
     public:
         const std::vector<TagBundleDescription>& getTagBundleDescriptions()
         {
             return tag_detector_->getTagBundleDescriptions();
         }
+
+
 
     Q_SIGNALS:
         void imageUpdated();
@@ -61,6 +65,8 @@ namespace apriltag_ros {
                            const sensor_msgs::CameraInfoConstPtr& camera_info);
         
         void addToObservedSet(int id);
+
+        bool tooSimilarToPrevious(const zarray_t* detection) const;
             
 
     };

@@ -85,6 +85,13 @@ void QNode::addToObservedSet(int id)
     Q_EMIT newTagObserved(id);
 }
 
+
+bool QNode::tooSimilarToPrevious(const zarray_t* detection) const
+{
+    return false;
+}
+
+
 void QNode::imageCallback (
     const sensor_msgs::ImageConstPtr& image_rect,
     const sensor_msgs::CameraInfoConstPtr& camera_info)
@@ -106,6 +113,12 @@ void QNode::imageCallback (
 
 
     auto detections = tag_detector_->getDetections();
+
+    if(!tooSimilarToPrevious(detections))
+    {
+        calibration_data.emplace_back(zarray_copy(detections));
+    }
+    std::vector<zarray_t> calibration_data;
     // std::cout << "Detected tag: ";
 
     visible_tags.clear();

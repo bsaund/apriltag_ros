@@ -160,6 +160,9 @@ void MainWindow::updateDisplayedImage()
     }
     tags_detected_text.append("]");
     ui.tags_detected->setText(tags_detected_text);
+
+    QString calibration_text(("Num Calibration Points: " + std::to_string(qnode.calibration_data.size())).c_str());
+    ui.num_calibration_points->setText(calibration_text);
 }
 
 MainWindow::~MainWindow() {}

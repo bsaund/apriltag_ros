@@ -213,7 +213,7 @@ class TagDetector
       const cv_bridge::CvImagePtr& image,
       const sensor_msgs::CameraInfoConstPtr& camera_info);
 
-  const zarray_t* const getDetections() const
+  const zarray_t* getDetections() const
   {
       return detections_;
   }
