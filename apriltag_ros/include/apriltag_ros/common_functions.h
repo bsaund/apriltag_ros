@@ -127,7 +127,7 @@ class TagBundleDescription
 
   std::string name () const { return name_; }
   // Get IDs of bundle member tags
-  std::vector<int> bundleIds () {
+  std::vector<int> bundleIds () const {
     std::vector<int> ids;
     for (unsigned int i = 0; i < tags_.size(); i++) {
       ids.push_back(tags_[i].id);
@@ -135,7 +135,7 @@ class TagBundleDescription
     return ids;
   }
   // Get sizes of bundle member tags
-  std::vector<double> bundleSizes () {
+  std::vector<double> bundleSizes () const {
     std::vector<double> sizes;
     for (unsigned int i = 0; i < tags_.size(); i++) {
       sizes.push_back(tags_[i].size);
@@ -212,6 +212,16 @@ class TagDetector
   AprilTagDetectionArray detectTags(
       const cv_bridge::CvImagePtr& image,
       const sensor_msgs::CameraInfoConstPtr& camera_info);
+
+  const zarray_t* const getDetections() const
+  {
+      return detections_;
+  }
+
+  const std::vector<TagBundleDescription>& getTagBundleDescriptions() const
+  {
+      return tag_bundle_descriptions_;
+  }
 
   // Get the pose of the tag in the camera frame
   // Returns homogeneous transformation matrix [R,t;[0 0 0 1]] which

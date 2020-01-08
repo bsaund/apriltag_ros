@@ -32,27 +32,37 @@ namespace apriltag_ros {
 	bool init();
 	void run();
         QPixmap& getPixmap();
+        std::set<int> visible_tags;
 
+    public:
+        const std::vector<TagBundleDescription>& getTagBundleDescriptions()
+        {
+            return tag_detector_->getTagBundleDescriptions();
+        }
 
     Q_SIGNALS:
         void imageUpdated();
+        void newTagObserved(int id);
         void rosShutdown();
 
     protected:
+        int init_argc;
+        char** init_argv;
+
         std::unique_ptr<image_transport::ImageTransport> it_;
         image_transport::CameraSubscriber camera_image_subscriber_;
         std::unique_ptr<TagDetector> tag_detector_;
         cv_bridge::CvImagePtr cv_image_;
         QPixmap pixmap;
+        std::set<int> observed_tags;
 
     protected:
         void imageCallback(const sensor_msgs::ImageConstPtr& image_rect,
                            const sensor_msgs::CameraInfoConstPtr& camera_info);
+        
+        void addToObservedSet(int id);
+            
 
-
-    private:
-        int init_argc;
-        char** init_argv;
     };
 
 }  // namespace apriltag_ros

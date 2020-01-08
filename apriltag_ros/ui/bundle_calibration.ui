@@ -25,7 +25,7 @@
           </rect>
         </property>
         <property name="text">
-          <string>Tags Detected: []</string>
+          <string>Visible Tags: []</string>
         </property>
       </widget>
       <widget class="QLabel" name="num_calibration_points">
@@ -75,7 +75,7 @@
         </property>
         <widget class="QLabel" name="selected_tags_heading">
           <property name="text">
-            <string>Use in Bundle Calibration</string>
+            <string>Which bundle to calibrate?</string>
           </property>
         </widget>
       </widget>

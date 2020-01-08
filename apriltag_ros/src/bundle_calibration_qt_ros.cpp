@@ -67,16 +67,29 @@ void QNode::run() {
 
 QPixmap& QNode::getPixmap()
 {
+    // Note: This should be guarded by a mutex, since we are updating the image in a different thread.
+    // In practice it is not critical for this use case since the returned pixmap is just used to update
+    // the diplayed camera image
     return pixmap;
 }
 
+
+void QNode::addToObservedSet(int id)
+{
+    if(observed_tags.count(id))
+    {
+        return;
+    }
+
+    observed_tags.insert(id);
+    Q_EMIT newTagObserved(id);
+}
 
 void QNode::imageCallback (
     const sensor_msgs::ImageConstPtr& image_rect,
     const sensor_msgs::CameraInfoConstPtr& camera_info)
 {
     
-    std::cout << "New image received\n";
     // Convert ROS's sensor_msgs::Image to cv_bridge::CvImagePtr in order to run
     // AprilTag 2 on the iamge
     try
@@ -89,28 +102,34 @@ void QNode::imageCallback (
         return;
     }
 
-    // Publish detected tags in the image by AprilTag 2
     tag_detector_->detectTags(cv_image_,camera_info);
-//     tag_detections_publisher_.publish(
-// );
 
-    // Publish the camera image overlaid by outlines of the detected tags and
-    // their payload values
-    // if (draw_tag_detections_image_)
-    // {
+
+    auto detections = tag_detector_->getDetections();
+    // std::cout << "Detected tag: ";
+
+    visible_tags.clear();
+    for(int i=0; i < zarray_size(detections); i++)
+    {
+        apriltag_detection_t *det;
+        zarray_get(detections, i, &det);
+        addToObservedSet(det->id);
+        visible_tags.insert(det->id);
+        // std::cout << det->id << ", ";
+    }
+    // std::cout << "\n";
+    // observed_tags///
+    
+    
     tag_detector_->drawDetections(cv_image_);
-    // tag_detections_image_publisher_.publish(cv_image_->toImageMsg());
-    // }
 
     int h = cv_image_->image.size().height;
     int w = cv_image_->image.size().width;
-    std::cout << "cv_image is: (" << w << ", " << h << ")\n"; 
 
     cv::cvtColor(cv_image_->image, cv_image_->image, cv::COLOR_BGR2RGB);
-    pixmap = QPixmap::fromImage(QImage(cv_image_->image.data, w, h, w*3, QImage::Format_RGB888));
 
-    std::cout << "pixmap width: " << pixmap.width() << "\n";
     
+    pixmap = QPixmap::fromImage(QImage(cv_image_->image.data, w, h, w*3, QImage::Format_RGB888));
     
     Q_EMIT imageUpdated();
 }

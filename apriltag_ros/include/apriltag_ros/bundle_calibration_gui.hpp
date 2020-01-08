@@ -26,13 +26,6 @@ namespace apriltag_ros
 	~MainWindow();
 
 
-    public:
-    //     void ReadSettings(); // Load up qt program settings at startup
-    //     void WriteSettings(); // Save qt program settings when closing
-
-    //     void closeEvent(QCloseEvent *event); // Overloaded function
-    //     void showNoMasterMessage();
-
     public Q_SLOTS:
     //     /******************************************
     //      ** Auto-connections (connectSlotsByName())
@@ -47,11 +40,17 @@ namespace apriltag_ros
     //      ** Manual connections
     //      *******************************************/
         void updateDisplayedImage();
-    //     void updateLoggingView(); // no idea why this can't connect automatically
+        void addTagToChecklist(int id);
 
-    private:
+    protected:
+        void setupBundleCheckboxes();
+        
+    protected:
 	Ui::ApriltagBundleCalibration ui;
 	QNode qnode;
+        int checkbox_offset = 35;
+        QButtonGroup checkboxes;
+        std::map<int, QLabel> specified_tags;
     };
 
 }
