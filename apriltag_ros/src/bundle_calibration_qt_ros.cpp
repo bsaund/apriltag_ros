@@ -4,6 +4,7 @@
 #include <std_msgs/String.h>
 #include <sstream>
 #include "apriltag_ros/bundle_calibration_qt_ros.hpp"
+#include <cmath>
 
 /*****************************************************************************
  ** Namespaces
@@ -86,9 +87,49 @@ void QNode::addToObservedSet(int id)
 }
 
 
-bool QNode::tooSimilarToPrevious(const zarray_t* detection) const
+bool QNode::tooSimilarToPrevious(const calibration_datum &cur) const
 {
-    return false;
+    if(calibration_data.size() == 0)
+    {
+        return false;
+    }
+
+    const calibration_datum &prev = calibration_data.back();
+
+    
+    if(prev.tags.size() != cur.tags.size())
+    {
+        return false;
+    }
+
+    for(int i=0; i<prev.tags.size(); i++)
+    {
+        if(prev.tags[i].id != cur.tags[i].id)
+        {
+            return false;
+        }
+
+        // std::cout << "\n";
+        for(int j=0; j<4; j++)
+        {
+            if(std::abs(cur.tags[i].corners[j][0] - prev.tags[i].corners[j][0]) >
+               PIXEL_MOTION_THRESHOLD_FOR_NEW_CALIBRATION_POINT ||
+               std::abs(cur.tags[i].corners[j][1] - prev.tags[i].corners[j][1]) >
+               PIXEL_MOTION_THRESHOLD_FOR_NEW_CALIBRATION_POINT)
+            {
+                return false;
+            }
+        }
+
+
+        
+    }
+
+
+    // std::cout << cur.tags[0].corners[0][0] << "\n";
+    
+    
+    return true;
 }
 
 
@@ -112,24 +153,34 @@ void QNode::imageCallback (
     tag_detector_->detectTags(cv_image_,camera_info);
 
 
-    auto detections = tag_detector_->getDetections();
+    // auto detections = 
 
-    if(!tooSimilarToPrevious(detections))
+    calibration_datum detections(tag_detector_->getDetections());
+
+
+    if(detections.tags.size() > 1 && 
+       !tooSimilarToPrevious(detections))
     {
-        calibration_data.emplace_back(zarray_copy(detections));
+        calibration_data.push_back(detections);
     }
+    
     std::vector<zarray_t> calibration_data;
     // std::cout << "Detected tag: ";
 
     visible_tags.clear();
-    for(int i=0; i < zarray_size(detections); i++)
+    for(const tag_for_calibration &tag: detections.tags)
     {
-        apriltag_detection_t *det;
-        zarray_get(detections, i, &det);
-        addToObservedSet(det->id);
-        visible_tags.insert(det->id);
-        // std::cout << det->id << ", ";
+        addToObservedSet(tag.id);
+        visible_tags.insert(tag.id);
     }
+    // for(int i=0; i < detections.tags.size(); i++)
+    // {
+    //     apriltag_detection_t *det;
+    //     zarray_get(detections, i, &det);
+    //     addToObservedSet(det->id);
+    //     visible_tags.insert(det->id);
+    //     // std::cout << det->id << ", ";
+    // }
     // std::cout << "\n";
     // observed_tags///
     
