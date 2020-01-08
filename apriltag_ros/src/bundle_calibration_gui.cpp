@@ -27,6 +27,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     // setWindowIcon(QIcon(":/images/icon.png"));
     // ui.tab_manager->setCurrentIndex(0); // ensure the first tab is showing - qt-designer should have this already hardwired, but often loses it (settings?).
     QObject::connect(&qnode, SIGNAL(rosShutdown()), this, SLOT(close()));
+    QObject::connect(&qnode, SIGNAL(imageUpdated()), this, SLOT(updateDisplayedImage()));
 
     /*********************
      ** Logging
@@ -41,6 +42,12 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     //     on_button_connect_clicked(true);
     // }
     qnode.init();
+}
+
+void MainWindow::updateDisplayedImage()
+{
+    std::cout << "Updating displayed image\n";
+    ui.camera_img->setPixmap(qnode.getPixmap());
 }
 
 MainWindow::~MainWindow() {}

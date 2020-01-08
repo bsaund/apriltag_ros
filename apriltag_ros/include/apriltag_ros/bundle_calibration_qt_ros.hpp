@@ -9,6 +9,7 @@
 #include <string>
 #include <QThread>
 #include <QStringListModel>
+#include <QPixmap>
 #include "apriltag_ros/common_functions.h"
 
 
@@ -30,11 +31,11 @@ namespace apriltag_ros {
 	virtual ~QNode();
 	bool init();
 	void run();
-        void imageCallback(const sensor_msgs::ImageConstPtr& image_rect,
-                           const sensor_msgs::CameraInfoConstPtr& camera_info);
+        QPixmap& getPixmap();
 
 
     Q_SIGNALS:
+        void imageUpdated();
         void rosShutdown();
 
     protected:
@@ -42,6 +43,12 @@ namespace apriltag_ros {
         image_transport::CameraSubscriber camera_image_subscriber_;
         std::unique_ptr<TagDetector> tag_detector_;
         cv_bridge::CvImagePtr cv_image_;
+        QPixmap pixmap;
+
+    protected:
+        void imageCallback(const sensor_msgs::ImageConstPtr& image_rect,
+                           const sensor_msgs::CameraInfoConstPtr& camera_info);
+
 
     private:
         int init_argc;

@@ -65,6 +65,11 @@ void QNode::run() {
     Q_EMIT rosShutdown(); // used to signal the gui for a shutdown (useful to roslaunch)
 }
 
+QPixmap& QNode::getPixmap()
+{
+    return pixmap;
+}
+
 
 void QNode::imageCallback (
     const sensor_msgs::ImageConstPtr& image_rect,
@@ -97,5 +102,16 @@ void QNode::imageCallback (
     // tag_detections_image_publisher_.publish(cv_image_->toImageMsg());
     // }
 
+    int h = cv_image_->image.size().height;
+    int w = cv_image_->image.size().width;
+    std::cout << "cv_image is: (" << w << ", " << h << ")\n"; 
+
+    cv::cvtColor(cv_image_->image, cv_image_->image, cv::COLOR_BGR2RGB);
+    pixmap = QPixmap::fromImage(QImage(cv_image_->image.data, w, h, w*3, QImage::Format_RGB888));
+
+    std::cout << "pixmap width: " << pixmap.width() << "\n";
+    
+    
+    Q_EMIT imageUpdated();
 }
 

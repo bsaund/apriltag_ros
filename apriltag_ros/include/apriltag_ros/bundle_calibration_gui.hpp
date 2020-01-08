@@ -25,6 +25,7 @@ namespace apriltag_ros
 	MainWindow(int argc, char** argv, QWidget *parent = 0);
 	~MainWindow();
 
+
     public:
     //     void ReadSettings(); // Load up qt program settings at startup
     //     void WriteSettings(); // Save qt program settings when closing
@@ -37,6 +38,7 @@ namespace apriltag_ros
     //      ** Auto-connections (connectSlotsByName())
     //      *******************************************/
         void on_button_start_calibration_clicked(bool check);
+
     //     void on_actionAbout_triggered();
     //     void on_button_connect_clicked(bool check );
     //     void on_checkbox_use_environment_stateChanged(int state);
@@ -44,6 +46,7 @@ namespace apriltag_ros
     //     /******************************************
     //      ** Manual connections
     //      *******************************************/
+        void updateDisplayedImage();
     //     void updateLoggingView(); // no idea why this can't connect automatically
 
     private:
