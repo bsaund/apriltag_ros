@@ -11,6 +11,7 @@
 #include <QStringListModel>
 #include <QPixmap>
 #include "apriltag_ros/common_functions.h"
+#include "common/homography.h"
 
 
 #define PIXEL_MOTION_THRESHOLD_FOR_NEW_CALIBRATION_POINT 30.0
@@ -26,46 +27,22 @@ namespace apriltag_ros {
  ** Class
  *****************************************************************************/
 
+    /*
+     *  Custom structs for storing tag detection data
+     *  These are easier to work with than zarrays defined in 
+     *  the apriltag library
+     */
     struct tag_for_calibration
     {
         int id;
         std::array<std::array<double, 2>, 4> corners;
-        matd_t* H;
-
-
-        tag_for_calibration(int id_, const double p[4][2], const matd_t* H_):
-            id(id_)
-        {
-            for(int i=0; i < 4; i++)
-            {
-                corners[i][0] = p[i][0];
-                corners[i][1] = p[i][1];
-            }
-            H = matd_copy(H_);
-        }
-
-        tag_for_calibration(const apriltag_detection_t* orig):
-            tag_for_calibration(orig->id, orig->p, orig->H)
-        {            
-        }
+        tag_for_calibration(const apriltag_detection_t* original);
     };
     
     struct calibration_datum
     {
         std::vector<tag_for_calibration> tags;
-
-        calibration_datum(const zarray_t* detections)
-        {
-            for(int i=0; i<zarray_size(detections); i++)
-            {
-                apriltag_detection_t* detection;
-                zarray_get(detections, i, &detection);
-                tags.emplace_back(detection);
-            }
-
-            std::sort(tags.begin(), tags.end(),
-                      [](tag_for_calibration &lhs, tag_for_calibration &rhs) {return lhs.id < rhs.id;});
-        }
+        calibration_datum(const zarray_t* detections);
     };
     
 
@@ -86,6 +63,7 @@ namespace apriltag_ros {
         {
             return tag_detector_->getTagBundleDescriptions();
         }
+        void calibrateBundle(std::set<int> tags_in_bundle);
 
 
 

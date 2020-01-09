@@ -16,6 +16,51 @@ using namespace apriltag_ros;
  ** Implementation
  *****************************************************************************/
 
+
+/*****************************************************************************
+ ** Calibration Data Structures
+ *****************************************************************************/
+tag_for_calibration::tag_for_calibration(const apriltag_detection_t* original)
+    : id(original->id)
+{
+    // Add to image point vector the tag corners in the image frame
+    // Going counterclockwise starting from the bottom left corner
+    double tag_x[4] = {-1,1,1,-1};
+    double tag_y[4] = {1,1,-1,-1}; // Negated because AprilTag tag local
+    // frame has y-axis pointing DOWN
+    // while we use the tag local frame
+    // with y-axis pointing UP
+    for(int i=0; i<4; i++)
+    {
+        double im_x, im_y;
+        homography_project(original->H, tag_x[i], tag_y[i], &im_x, &im_y);
+        corners[i][0] = im_x;
+        corners[i][1] = im_y;
+    }
+}
+
+
+calibration_datum::calibration_datum(const zarray_t* detections)
+{
+    for(int i=0; i<zarray_size(detections); i++)
+    {
+        apriltag_detection_t* detection;
+        zarray_get(detections, i, &detection);
+        tags.emplace_back(detection);
+    }
+
+    std::sort(tags.begin(), tags.end(),
+              [](tag_for_calibration &lhs, tag_for_calibration &rhs) {return lhs.id < rhs.id;});
+}
+
+
+
+
+/*****************************************************************************
+ ** QNode
+ *****************************************************************************/
+
+
 QNode::QNode(int argc, char** argv ) :
     init_argc(argc),
     init_argv(argv)
@@ -102,6 +147,11 @@ bool QNode::tooSimilarToPrevious(const calibration_datum &cur) const
         return false;
     }
 
+    // if(cur.tags.size() > 0)
+    // {
+    //     std::cout << "cur corner 0: (" << cur.tags[0].corners[0][0] << ", " << cur.tags[0].corners[0][1] << ")\n";
+    // }
+
     for(int i=0; i<prev.tags.size(); i++)
     {
         if(prev.tags[i].id != cur.tags[i].id)
@@ -120,15 +170,7 @@ bool QNode::tooSimilarToPrevious(const calibration_datum &cur) const
                 return false;
             }
         }
-
-
-        
     }
-
-
-    // std::cout << cur.tags[0].corners[0][0] << "\n";
-    
-    
     return true;
 }
 
@@ -152,9 +194,6 @@ void QNode::imageCallback (
 
     tag_detector_->detectTags(cv_image_,camera_info);
 
-
-    // auto detections = 
-
     calibration_datum detections(tag_detector_->getDetections());
 
 
@@ -165,7 +204,6 @@ void QNode::imageCallback (
     }
     
     std::vector<zarray_t> calibration_data;
-    // std::cout << "Detected tag: ";
 
     visible_tags.clear();
     for(const tag_for_calibration &tag: detections.tags)
@@ -173,18 +211,6 @@ void QNode::imageCallback (
         addToObservedSet(tag.id);
         visible_tags.insert(tag.id);
     }
-    // for(int i=0; i < detections.tags.size(); i++)
-    // {
-    //     apriltag_detection_t *det;
-    //     zarray_get(detections, i, &det);
-    //     addToObservedSet(det->id);
-    //     visible_tags.insert(det->id);
-    //     // std::cout << det->id << ", ";
-    // }
-    // std::cout << "\n";
-    // observed_tags///
-    
-    
     tag_detector_->drawDetections(cv_image_);
 
     int h = cv_image_->image.size().height;
@@ -198,3 +224,12 @@ void QNode::imageCallback (
     Q_EMIT imageUpdated();
 }
 
+
+void QNode::calibrateBundle(std::set<int> tags_in_bundle)
+{
+    std::cout << "Calibrating bundle with tag ids: ";
+    for(int t: tags_in_bundle)
+    {
+        
+    }
+}
