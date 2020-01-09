@@ -170,7 +170,24 @@ MainWindow::~MainWindow() {}
 void MainWindow::on_button_start_calibration_clicked(bool check)
 {
     std::cout << "Calibration Clicked\n";
+
+    std::cout << "Check button: " << checkboxes.checkedId() << "\n";
+    int selected_bundle = checkboxes.checkedId();
+    if(selected_bundle < 0)
+    {
+        QMessageBox box;
+        box.setText("First select a bundle to calibrate");
+        box.setWindowTitle("Cannot Calibrate");
+        box.exec();
+        return;
+    }
+
+    
+    
     ui.button_start_calibration->setEnabled(false);
+    qnode.calibrateBundle(selected_bundle);
+    // qnode.calibrateBundle(qnode.getTagBundleDescriptions()[selected_bundle].bundleIds());
+    
 }
 
 

@@ -3,8 +3,12 @@
 #include <string>
 #include <std_msgs/String.h>
 #include <sstream>
-#include "apriltag_ros/bundle_calibration_qt_ros.hpp"
 #include <cmath>
+
+#include "apriltag_ros/bundle_calibration_qt_ros.hpp"
+#include "apriltag_ros/ceres_bundle_solver.hpp"
+
+
 
 /*****************************************************************************
  ** Namespaces
@@ -224,12 +228,53 @@ void QNode::imageCallback (
     Q_EMIT imageUpdated();
 }
 
-
-void QNode::calibrateBundle(std::set<int> tags_in_bundle)
+/*
+ *  Remove all tags that are not in the bundle to calibrate
+ */
+std::vector<calibration_datum> QNode::cleanCalibrationData(std::set<int> tags_to_calibrate) const
 {
-    std::cout << "Calibrating bundle with tag ids: ";
-    for(int t: tags_in_bundle)
+    // std::cout << "Cleaning calibration data, keeping only: ";
+    // for(int t: tags_to_calibrate)
+    // {
+    //     std::cout << t << ", ";
+    // }
+    // std::cout << "\n";
+    std::vector<calibration_datum> cleaned_calibration_data;
+
+    for(const calibration_datum &original_datum: calibration_data)
     {
-        
+        calibration_datum cleaned_datum;
+        for(const tag_for_calibration &orig_tag: original_datum.tags)
+        {
+            if(tags_to_calibrate.count(orig_tag.id))
+            {
+                cleaned_datum.tags.push_back(orig_tag);
+            }
+        }
+        if(cleaned_datum.tags.size() > 1)
+        {
+            cleaned_calibration_data.push_back(cleaned_datum);
+        }
     }
+    return cleaned_calibration_data;
+}
+
+
+void QNode::calibrateBundle(int bundle_id)
+{
+
+    auto tag_ids = getTagBundleDescriptions()[bundle_id-1].bundleIds();
+
+    auto data = cleanCalibrationData(std::set<int>(tag_ids.begin(), tag_ids.end()));
+    std::cout << "Calibration data size: " << data.size() << "\n";
+
+    std::cout << "Calibrating bundle with tag ids: ";    
+    for(int t: tag_ids)
+    {
+        std::cout << t << ", ";
+    }
+    std::cout << "\n";
+
+    CeresBundleSolver s;
+    s.solve(9);
 }

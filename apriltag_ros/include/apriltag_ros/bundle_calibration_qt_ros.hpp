@@ -43,6 +43,7 @@ namespace apriltag_ros {
     {
         std::vector<tag_for_calibration> tags;
         calibration_datum(const zarray_t* detections);
+        calibration_datum() = default;
     };
     
 
@@ -63,7 +64,8 @@ namespace apriltag_ros {
         {
             return tag_detector_->getTagBundleDescriptions();
         }
-        void calibrateBundle(std::set<int> tags_in_bundle);
+        std::vector<calibration_datum> cleanCalibrationData(std::set<int> tags_to_calibrate) const;
+        void calibrateBundle(int bundle_id);
 
 
 

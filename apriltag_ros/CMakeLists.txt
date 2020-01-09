@@ -19,7 +19,9 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 
+
 find_package(Qt5 COMPONENTS Core Widgets)
+find_package(Ceres)
 
 find_package(PkgConfig)
 pkg_search_module(apriltag REQUIRED apriltag)
@@ -139,7 +141,8 @@ target_link_libraries(${PROJECT_NAME}_single_image_client_node ${PROJECT_NAME}_c
 # add_executable(bundle_calibration_gui src/bundle_calibration_gui.cpp)
 # target_link_libraries(bundle_calibration_gui ${PROJECT_NAME}_bundle_calibrator ${catkin_LIBRARIES})
 
-if(Qt5_FOUND)
+if(Qt5_FOUND AND CERES_FOUND)
+  include_directories(${CERES_INCLUDE_DIRS})
   add_library(${PROJECT_NAME}_bundle_calibrator src/bundle_calibrator.cpp)
   target_link_libraries(${PROJECT_NAME}_bundle_calibrator ${PROJECT_NAME}_common ${catkin_LIBRARIES})
 
@@ -147,17 +150,27 @@ if(Qt5_FOUND)
   include_directories(${Qt5Core_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS})
   include_directories(${CMAKE_CURRENT_BINARY_DIR}) # Needed to pick up ui files in build dir
 
-  file(GLOB_RECURSE QT_MOC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} FOLLOW_SYMLINKS include/apriltag_ros/*.hpp)
+  # file(GLOB_RECURSE QT_MOC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} FOLLOW_SYMLINKS include/apriltag_ros/*.hpp)
+  
 
   QT5_WRAP_UI(QT_UI_H ui/bundle_calibration.ui)
-  QT5_WRAP_CPP(QT_MOC_HPP ${QT_MOC})
+  # QT5_WRAP_CPP(QT_MOC_HPP ${QT_MOC})
+  QT5_WRAP_CPP(QT_MOC_HPP
+    include/apriltag_ros/bundle_calibration_gui.hpp
+    include/apriltag_ros/bundle_calibration_qt_ros.hpp
+    )
   
   add_executable(${PROJECT_NAME}_calibrate_bundle
     src/bundle_calibration_gui.cpp
     src/bundle_calibration_qt_ros.cpp
+    src/ceres_bundle_solver.cpp
     ${QT_UI_H}
     ${QT_MOC_HPP})
-  target_link_libraries(${PROJECT_NAME}_calibrate_bundle Qt5::Widgets ${PROJECT_NAME}_common ${catkin_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME}_calibrate_bundle
+    Qt5::Widgets
+    ${CERES_LIBRARIES}
+    ${PROJECT_NAME}_common
+    ${catkin_LIBRARIES})
 endif()
 
 
