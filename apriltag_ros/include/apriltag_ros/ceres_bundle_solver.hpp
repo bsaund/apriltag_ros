@@ -61,6 +61,7 @@ namespace apriltag_ros
             Eigen::Matrix<T, 3, 4> extrinsic;
             extrinsic << q_tag.toRotationMatrix(), p_tag;
 
+
             Eigen::Matrix<T, 3, 3> intrinsic;
             intrinsic(0,0) = T(fx);
             intrinsic(1,1) = T(fy);
@@ -68,15 +69,24 @@ namespace apriltag_ros
             intrinsic(1,2) = T(cy);
             intrinsic(2,2) = T(1);
 
+
+
+
+            // Eigen::Matrix<T, 3, 1> image_output = intrinsic * extrinsic * object_point;
             Eigen::Matrix<T, 3, 1> image_output = intrinsic * extrinsic * object_point;
             
             
             // residual[0] = image_output(0,0) - T(im_x);
             // residual[1] = image_output(1,0) - T(im_y);
-            // residual[0] = image_output(0,0)/image_output(2,0) - T(im_x);
-            // residual[1] = image_output(1,0)/image_output(2,0) - T(im_y);
-            residual[0] = T(im_x) - extrinsic(0,3);
-            residual[1] = T(im_y) - extrinsic(1,3);
+            residual[0] = image_output(0,0)/image_output(2,0) - T(im_x);
+            residual[1] = image_output(1,0)/image_output(2,0) - T(im_y);
+
+
+            // std::cout << "extrinsic\n" << extrinsic << "\n\n";
+            // std::cout << "image output\n" << image_output << "\n\n";
+            // std::cout << "residual:\n" << residual[0] << "\n" << residual[1] << "\n";
+            // residual[0] = T(im_x) - extrinsic(0,3);
+            // residual[1] = T(im_y) - extrinsic(1,3);
             return true;
         }
         

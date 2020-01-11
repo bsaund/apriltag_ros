@@ -22,7 +22,7 @@ double CeresBundleSolver::solve(double x)
 
 
 
-    std::vector<double> p_tag{0, 0, 1.8};
+    std::vector<double> p_tag{2, 1, 1};
     std::vector<double> q_tag{0,0,0,1};
 
     double fx = 10;
@@ -30,44 +30,65 @@ double CeresBundleSolver::solve(double x)
     double cx = 0;
     double cy = 0;
 
-    double im_x = 10;
-    double im_y = 10;
+    std::vector<std::vector<double> > im{
+        {5,5},
+        {5,-5},
+        {-5, -5},
+        {-5, 5}
+    };
 
-    double obj_x = 2;
-    double obj_y = 2;
+    std::vector<std::vector<double> > obj{
+        {1, 1},
+        {1, -1},
+        {-1, -1},
+        {-1, 1}
+    };
+    // double im_x = 5;
+    // double im_y = 5;
 
-    std::cout << "images point is at: " << im_x << ", " << im_y << "\n";
-    std::cout << "object point is at: " << obj_x << ", " << obj_y << "\n";
+    // double obj_x = 1;
+    // double obj_y = 1;
+
+    // std::cout << "images point is at: " << im_x << ", " << im_y << "\n";
+    // std::cout << "object point is at: " << obj_x << ", " << obj_y << "\n";
+
+
+    // auto a = CameraCostFunctor(im_x, im_y, obj_x, obj_y, fx, fy, cx, cy);
+    // double residual[2];
+    // a(p_tag.data(), q_tag.data(), residual);
+
+    // return 0;
     
 
     ceres::LocalParameterization* quaternion_local_parameterization =
         new EigenQuaternionParameterization;
     
-    // {
+    {
         CostFunction* camera_cost_function_1 =
             new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
-                new CameraCostFunctor(im_x, im_y, obj_x, obj_y, fx, fy, cx, cy));
+                new CameraCostFunctor(im[0][0], im[0][1], obj[0][1], obj[1][0], fx, fy, cx, cy));
         problem.AddResidualBlock(camera_cost_function_1, NULL, p_tag.data(), q_tag.data());
 
-        // CostFunction* camera_cost_function_2 =
-        //     new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
-        //         new CameraCostFunctor(10, -10, 1, -1, fx, fy, cx, cy));
-        // problem.AddResidualBlock(camera_cost_function_2, NULL, p_tag.data(), q_tag.data());
+        CostFunction* camera_cost_function_2 =
+            new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
+                new CameraCostFunctor(im[1][0], im[1][1], obj[1][0], obj[1][1], fx, fy, cx, cy));
+        problem.AddResidualBlock(camera_cost_function_2, NULL, p_tag.data(), q_tag.data());
 
-        // CostFunction* camera_cost_function_3 =
-        //     new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
-        //         new CameraCostFunctor(-10, -10, -1, -1, fx, fy, cx, cy));
-        // problem.AddResidualBlock(camera_cost_function_3, NULL, p_tag.data(), q_tag.data());
+        CostFunction* camera_cost_function_3 =
+            new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
+                new CameraCostFunctor(im[2][0], im[2][1], obj[2][0], obj[2][1], fx, fy, cx, cy));
+        problem.AddResidualBlock(camera_cost_function_3, NULL, p_tag.data(), q_tag.data());
 
-        // CostFunction* camera_cost_function_4 =
-        //     new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
-        //         new CameraCostFunctor(-10, 10, -1, 1, fx, fy, cx, cy));
-        // problem.AddResidualBlock(camera_cost_function_4, NULL, p_tag.data(), q_tag.data());
-    // }
+        CostFunction* camera_cost_function_4 =
+            new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
+                new CameraCostFunctor(im[3][0], im[3][1], obj[3][0], obj[3][1], fx, fy, cx, cy));
+        problem.AddResidualBlock(camera_cost_function_4, NULL, p_tag.data(), q_tag.data());
+    }
 
     problem.SetParameterization(q_tag.data(), quaternion_local_parameterization);
 
 
+    // problem.SetParameterBlockConstant(q_tag.data());
 
 
 

@@ -6,6 +6,8 @@
 *****************************************************************************/
 
 #include <ros/ros.h>
+#include <tf2_ros/transform_listener.h>
+
 #include <string>
 #include <QThread>
 #include <QStringListModel>
@@ -81,6 +83,9 @@ namespace apriltag_ros {
         std::unique_ptr<image_transport::ImageTransport> it_;
         image_transport::CameraSubscriber camera_image_subscriber_;
         std::unique_ptr<TagDetector> tag_detector_;
+        ros::Publisher tag_detections_publisher_;
+        tf2_ros::Buffer tf_buffer;
+        tf2_ros::TransformListener tf_listener;
         cv_bridge::CvImagePtr cv_image_;
         QPixmap pixmap;
         std::set<int> observed_tags;

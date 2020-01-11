@@ -171,6 +171,14 @@ if(Qt5_FOUND AND CERES_FOUND)
     ${CERES_LIBRARIES}
     ${PROJECT_NAME}_common
     ${catkin_LIBRARIES})
+
+  add_executable(wip_ceres src/wip_ceres.cpp
+    src/ceres_bundle_solver.cpp)
+
+  target_link_libraries(wip_ceres
+    ${PROJECT_NAME}_common
+    ${CERES_LIBRARIES}
+    )
 endif()
 
 

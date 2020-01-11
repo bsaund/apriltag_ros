@@ -67,7 +67,8 @@ calibration_datum::calibration_datum(const zarray_t* detections)
 
 QNode::QNode(int argc, char** argv ) :
     init_argc(argc),
-    init_argv(argv)
+    init_argv(argv),
+    tf_listener(tf_buffer)
 {}
 
 QNode::~QNode() {
@@ -98,6 +99,9 @@ bool QNode::init() {
 
     tag_detector_ = std::unique_ptr<TagDetector>(
         new TagDetector(pnh));
+    tag_detections_publisher_ =
+        nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
+
         // std::make_unique<TagDetector>(pnh);
 
     // Add your ros communications here.
@@ -196,7 +200,7 @@ void QNode::imageCallback (
         return;
     }
 
-    tag_detector_->detectTags(cv_image_,camera_info);
+    tag_detections_publisher_.publish(tag_detector_->detectTags(cv_image_,camera_info));
 
     calibration_datum detections(tag_detector_->getDetections());
 
@@ -266,6 +270,15 @@ void QNode::calibrateBundle(int bundle_id)
     auto tag_ids = getTagBundleDescriptions()[bundle_id-1].bundleIds();
 
     auto data = cleanCalibrationData(std::set<int>(tag_ids.begin(), tag_ids.end()));
+
+    std::map<int, raw_pose> tag_poses;
+    std::map<int, raw_pose> camera_poses;
+
+    tag_poses[tag_ids[0]].translation = std::vector<double>{0,0,0};
+    tag_poses[tag_ids[0]].quaternion = std::vector<double>{0,0,0,1};
+
+    geometry_msgs::TransformStamped transform;
+    transform = tf_buffer.lookupTransform("tag_1", "tag_2", ros::Time(0));
     std::cout << "Calibration data size: " << data.size() << "\n";
 
     std::cout << "Calibrating bundle with tag ids: ";    
