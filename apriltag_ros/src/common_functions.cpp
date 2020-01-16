@@ -30,7 +30,7 @@
  */
 
 #include "apriltag_ros/common_functions.h"
-#include "image_geometry/pinhole_camera_model.h"
+
 
 #include "common/homography.h"
 #include "tagStandard52h13.h"
@@ -206,10 +206,10 @@ TagDetector::~TagDetector() {
   }
 }
 
-AprilTagDetectionArray TagDetector::detectTags (
-    const cv_bridge::CvImagePtr& image,
-    const sensor_msgs::CameraInfoConstPtr& camera_info) {
-  // Convert image to AprilTag code's format
+
+void TagDetector::updateDetections(const cv_bridge::CvImagePtr& image)
+{
+    // Convert image to AprilTag code's format
   cv::Mat gray_image;
   if (image->image.channels() == 1)
   {
@@ -220,10 +220,78 @@ AprilTagDetectionArray TagDetector::detectTags (
     cv::cvtColor(image->image, gray_image, CV_BGR2GRAY);
   }
   image_u8_t apriltag_image = { .width = gray_image.cols,
-                                  .height = gray_image.rows,
-                                  .stride = gray_image.cols,
-                                  .buf = gray_image.data
+                                .height = gray_image.rows,
+                                .stride = gray_image.cols,
+                                .buf = gray_image.data
   };
+
+  // Run AprilTag algorithm on the image
+  if (detections_)
+  {
+    apriltag_detections_destroy(detections_);
+    detections_ = NULL;
+  }
+  detections_ = apriltag_detector_detect(td_, &apriltag_image);
+
+  // If remove_duplicates_ is set to true, then duplicate tags are not allowed.
+  // Thus any duplicate tag IDs visible in the scene must include at least 1
+  // erroneous detection. Remove any tags with duplicate IDs to ensure removal
+  // of these erroneous detections
+  if (remove_duplicates_)
+  {
+    removeDuplicates();
+  }
+}
+
+AprilTagDetection TagDetector::solveTagTransform(double tag_size, const apriltag_detection_t* detection,
+                                                 const image_geometry::PinholeCameraModel &camera_model,
+                                                 const std_msgs::Header &header) const
+{
+  // Note on frames:
+  // The raw AprilTag 2 uses the following frames:
+  //   - camera frame: looking from behind the camera (like a
+  //     photographer), x is right, y is up and z is towards you
+  //     (i.e. the back of camera)
+  //   - tag frame: looking straight at the tag (oriented correctly),
+  //     x is right, y is down and z is away from you (into the tag).
+  // But we want:
+  //   - camera frame: looking from behind the camera (like a
+  //     photographer), x is right, y is down and z is straight
+  //     ahead
+  //   - tag frame: looking straight at the tag (oriented correctly),
+  //     x is right, y is up and z is towards you (out of the tag).
+  // Using these frames together with cv::solvePnP directly avoids
+  // AprilTag 2's frames altogether.
+  // TODO solvePnP[Ransac] better?
+
+  std::vector<cv::Point3d > standaloneTagObjectPoints;
+  std::vector<cv::Point2d > standaloneTagImagePoints;
+  addObjectPoints(tag_size/2, cv::Matx44d::eye(), standaloneTagObjectPoints);
+  addImagePoints(detection, standaloneTagImagePoints);
+  Eigen::Matrix4d transform = getRelativeTransform(standaloneTagObjectPoints,
+                                                   standaloneTagImagePoints,
+                                                   camera_model.fx(), camera_model.fy(),
+                                                   camera_model.cx(), camera_model.cy());
+  Eigen::Matrix3d rot = transform.block(0, 0, 3, 3);
+  Eigen::Quaternion<double> rot_quaternion(rot);
+
+  geometry_msgs::PoseWithCovarianceStamped tag_pose =
+    makeTagPose(transform, rot_quaternion, header);
+
+  // Add the detection to the back of the tag detection array
+  AprilTagDetection tag_detection;
+  tag_detection.pose = tag_pose;
+  tag_detection.id.push_back(detection->id);
+  tag_detection.size.push_back(tag_size);
+  return tag_detection;
+}
+
+
+AprilTagDetectionArray TagDetector::detectTags (
+    const cv_bridge::CvImagePtr& image,
+    const sensor_msgs::CameraInfoConstPtr& camera_info) {
+  
+  updateDetections(image);
 
   image_geometry::PinholeCameraModel camera_model;
   camera_model.fromCameraInfo(camera_info);
@@ -234,22 +302,6 @@ AprilTagDetectionArray TagDetector::detectTags (
   double cx = camera_model.cx(); // optical center x-coordinate [px]
   double cy = camera_model.cy(); // optical center y-coordinate [px]
 
-  // Run AprilTag 2 algorithm on the image
-  if (detections_)
-  {
-    apriltag_detections_destroy(detections_);
-    detections_ = NULL;
-  }
-  detections_ = apriltag_detector_detect(td_, &apriltag_image);
-
-  // If remove_dulpicates_ is set to true, then duplicate tags are not allowed.
-  // Thus any duplicate tag IDs visible in the scene must include at least 1
-  // erroneous detection. Remove any tags with duplicate IDs to ensure removal
-  // of these erroneous detections
-  if (remove_duplicates_)
-  {
-    removeDuplicates();
-  }
 
   // Compute the estimated translation and rotation individually for each
   // detected tag
@@ -308,44 +360,10 @@ AprilTagDetectionArray TagDetector::detectTags (
     //=================================================================
     // The remainder of this for loop is concerned with standalone tag
     // poses!
-    double tag_size = standaloneDescription->size();
 
     // Get estimated tag pose in the camera frame.
-    //
-    // Note on frames:
-    // The raw AprilTag 2 uses the following frames:
-    //   - camera frame: looking from behind the camera (like a
-    //     photographer), x is right, y is up and z is towards you
-    //     (i.e. the back of camera)
-    //   - tag frame: looking straight at the tag (oriented correctly),
-    //     x is right, y is down and z is away from you (into the tag).
-    // But we want:
-    //   - camera frame: looking from behind the camera (like a
-    //     photographer), x is right, y is down and z is straight
-    //     ahead
-    //   - tag frame: looking straight at the tag (oriented correctly),
-    //     x is right, y is up and z is towards you (out of the tag).
-    // Using these frames together with cv::solvePnP directly avoids
-    // AprilTag 2's frames altogether.
-    // TODO solvePnP[Ransac] better?
-    std::vector<cv::Point3d > standaloneTagObjectPoints;
-    std::vector<cv::Point2d > standaloneTagImagePoints;
-    addObjectPoints(tag_size/2, cv::Matx44d::eye(), standaloneTagObjectPoints);
-    addImagePoints(detection, standaloneTagImagePoints);
-    Eigen::Matrix4d transform = getRelativeTransform(standaloneTagObjectPoints,
-                                                     standaloneTagImagePoints,
-                                                     fx, fy, cx, cy);
-    Eigen::Matrix3d rot = transform.block(0, 0, 3, 3);
-    Eigen::Quaternion<double> rot_quaternion(rot);
-
-    geometry_msgs::PoseWithCovarianceStamped tag_pose =
-        makeTagPose(transform, rot_quaternion, image->header);
-
-    // Add the detection to the back of the tag detection array
-    AprilTagDetection tag_detection;
-    tag_detection.pose = tag_pose;
-    tag_detection.id.push_back(detection->id);
-    tag_detection.size.push_back(tag_size);
+    AprilTagDetection tag_detection = solveTagTransform(standaloneDescription->size(), detection,
+                                                       camera_model, image->header);
     tag_detection_array.detections.push_back(tag_detection);
     detection_names.push_back(standaloneDescription->frame_name());
   }
@@ -468,7 +486,7 @@ void TagDetector::addObjectPoints (
 }
 
 void TagDetector::addImagePoints (
-    apriltag_detection_t *detection,
+    const apriltag_detection_t *detection,
     std::vector<cv::Point2d >& imagePoints) const
 {
   // Add to image point vector the tag corners in the image frame
@@ -519,7 +537,7 @@ Eigen::Matrix4d TagDetector::getRelativeTransform(
 geometry_msgs::PoseWithCovarianceStamped TagDetector::makeTagPose(
     const Eigen::Matrix4d& transform,
     const Eigen::Quaternion<double> rot_quaternion,
-    const std_msgs::Header& header)
+    const std_msgs::Header& header) const
 {
   geometry_msgs::PoseWithCovarianceStamped pose;
   pose.header = header;

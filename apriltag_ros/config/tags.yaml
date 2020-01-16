@@ -53,15 +53,16 @@ tag_bundles:
     layout:
       [
         {id: 1, size: 0.05},
-        {id: 2, size: 0.05, x: 0.27}
+        {id: 2, size: 0.05, x: 0.27},
+        {id: 3, size: 0.05},
       ]
     },
-    {
-    name: 'bundle_2',
-    layout:
-      [
-        {id: 3, size: 0.05},
-        {id: 5, size: 0.01, x: 0.27}
-      ]
-    }
+    # {
+    # name: 'bundle_2',
+    # layout:
+    #   [
+    #     {id: 3, size: 0.05},
+    #     {id: 5, size: 0.01, x: 0.27}
+    #   ]
+    # }
   ]

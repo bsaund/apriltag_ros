@@ -61,11 +61,13 @@
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/image_encodings.h>
 #include <tf/transform_broadcaster.h>
+#include "image_geometry/pinhole_camera_model.h"
 
 #include <apriltag.h>
 
 #include "apriltag_ros/AprilTagDetection.h"
 #include "apriltag_ros/AprilTagDetectionArray.h"
+
 
 namespace apriltag_ros
 {
@@ -206,12 +208,20 @@ class TagDetector
   geometry_msgs::PoseWithCovarianceStamped makeTagPose(
       const Eigen::Matrix4d& transform,
       const Eigen::Quaternion<double> rot_quaternion,
-      const std_msgs::Header& header);
+      const std_msgs::Header& header) const;
 
-  // Detect tags in an image
+  // Detect tags in an image and update internal detections_ storage
+  void updateDetections(const cv_bridge::CvImagePtr& image);
+
+  AprilTagDetection solveTagTransform(double tag_size, const apriltag_detection_t* detection,
+                                      const image_geometry::PinholeCameraModel &camera_model,
+                                      const std_msgs::Header &header) const;
+
+  // Solve and publish AprilTag poses for bundles and standalone tags
   AprilTagDetectionArray detectTags(
       const cv_bridge::CvImagePtr& image,
       const sensor_msgs::CameraInfoConstPtr& camera_info);
+
 
   const zarray_t* getDetections() const
   {
@@ -222,6 +232,7 @@ class TagDetector
   {
       return tag_bundle_descriptions_;
   }
+
 
   // Get the pose of the tag in the camera frame
   // Returns homogeneous transformation matrix [R,t;[0 0 0 1]] which
@@ -235,7 +246,7 @@ class TagDetector
       std::vector<cv::Point2d > imagePoints,
       double fx, double fy, double cx, double cy) const;
   
-  void addImagePoints(apriltag_detection_t *detection,
+  void addImagePoints(const apriltag_detection_t *detection,
                       std::vector<cv::Point2d >& imagePoints) const;
   void addObjectPoints(double s, cv::Matx44d T_oi,
                        std::vector<cv::Point3d >& objectPoints) const;

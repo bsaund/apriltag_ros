@@ -4,6 +4,10 @@
 #include <std_msgs/String.h>
 #include <sstream>
 #include <cmath>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2/convert.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 
 #include "apriltag_ros/bundle_calibration_qt_ros.hpp"
 #include "apriltag_ros/ceres_bundle_solver.hpp"
@@ -56,6 +60,23 @@ calibration_datum::calibration_datum(const zarray_t* detections)
     std::sort(tags.begin(), tags.end(),
               [](tag_for_calibration &lhs, tag_for_calibration &rhs) {return lhs.id < rhs.id;});
 }
+
+
+
+std::ostream& apriltag_ros::operator<<(std::ostream& os, const raw_pose &p)
+{
+    os << "trans: " <<
+        p.translation[0] << ", " <<
+        p.translation[1] << ", " <<
+        p.translation[2] << "  rot: " <<
+        p.quaternion[0] << ", " <<
+        p.quaternion[1] << ", " <<
+        p.quaternion[2] << ", " <<
+        p.quaternion[3];
+    return os;
+}
+
+
 
 
 
@@ -182,6 +203,104 @@ bool QNode::tooSimilarToPrevious(const calibration_datum &cur) const
     return true;
 }
 
+void QNode::publishBundleTagTransforms(const sensor_msgs::CameraInfoConstPtr& camera_info,
+                                       const std_msgs::Header& header,
+                                       std::string camera_frame_name)
+{
+    image_geometry::PinholeCameraModel camera_model;
+    camera_model.fromCameraInfo(camera_info);
+
+    AprilTagDetectionArray tag_detection_array;
+    std::map<int, AprilTagDetection> tag_detections;
+
+    auto tag_bundle_descriptions = tag_detector_->getTagBundleDescriptions();
+
+    // Returns the size of tag, or -1 if tag not found in any bundle
+    auto tagSize = [&](int tag_id)
+        {
+            for (unsigned int j=0; j<tag_bundle_descriptions.size(); j++)
+            {
+                TagBundleDescription bundle = tag_bundle_descriptions[j];
+
+                if (bundle.id2idx_.find(tag_id) != bundle.id2idx_.end())
+                {
+                    return bundle.memberSize(tag_id);
+                }
+            }
+            return -1.0;
+        };
+
+
+    const zarray_t* detections = tag_detector_->getDetections();
+    std::map<int, geometry_msgs::TransformStamped> transforms;
+    for(int i=0; i<zarray_size(detections); i++)
+    {
+        // Get the i-th detected tag
+        apriltag_detection_t *detection;
+        zarray_get(detections, i, &detection);
+        int tag_id = detection->id;
+
+        double tag_size = tagSize(tag_id);
+        if(tag_size < 0) // -1 indicates tag not found
+        {
+            continue;
+        }
+
+        // tag_detections[tag_id]
+        AprilTagDetection solution = tag_detector_->solveTagTransform(tag_size, detection, camera_model, header);
+        // geometry_msgs::PoseStamped pose;
+        // pose.pose = solution.pose.pose.pose;
+        // pose.header = solution.pose.header;
+        // tf::Stamped<tf::Transform> tag_transform;
+        // tf::poseStampedMsgToTF(pose, tag_transform);
+
+        // tf_pub.sendTransform(tag_transform, tag_transform.stamp_, camera_frame_name, "tag_" + std::to_string(i));
+        geometry_msgs::TransformStamped tf_msg;
+        tf_msg.header.stamp = ros::Time::now();
+        tf_msg.header.frame_id = camera_frame_name;
+        tf_msg.child_frame_id = "tag_" + std::to_string(tag_id);
+        
+        tf_msg.transform.translation.x = solution.pose.pose.pose.position.x;
+        tf_msg.transform.translation.y = solution.pose.pose.pose.position.y;
+        tf_msg.transform.translation.z = solution.pose.pose.pose.position.z;
+        tf_msg.transform.rotation.x = solution.pose.pose.pose.orientation.x;
+        tf_msg.transform.rotation.y = solution.pose.pose.pose.orientation.y;
+        tf_msg.transform.rotation.z = solution.pose.pose.pose.orientation.z;
+        tf_msg.transform.rotation.w = solution.pose.pose.pose.orientation.w;
+        transforms[tag_id] = tf_msg;
+    }
+
+    if(transforms.size() == 0)
+    {
+        return;
+    }
+
+    std::map<int, geometry_msgs::TransformStamped>::iterator it = transforms.begin();
+    geometry_msgs::TransformStamped base_tf = it->second;
+    tf2::Transform tmp;
+    tf2::fromMsg(base_tf.transform, tmp);
+    base_tf.transform = tf2::toMsg(tmp.inverse());
+    auto camera_name = base_tf.header.frame_id;
+    base_tf.header.frame_id = base_tf.child_frame_id;
+    base_tf.child_frame_id = camera_name;
+    
+    // tf2::Stamped<tf2::Transform> camera_to_first;
+    // tf2::fromMsg(it->second, camera_to_first);
+    tf_br.sendTransform(base_tf);
+
+    it++;
+    while(it != transforms.end())
+    {
+        tf2::doTransform(it->second, it->second, base_tf);
+        it->second.header.frame_id = base_tf.header.frame_id;
+        tf_br.sendTransform(it->second);
+        it++;
+    }
+
+    
+}
+
+
 
 void QNode::imageCallback (
     const sensor_msgs::ImageConstPtr& image_rect,
@@ -200,7 +319,11 @@ void QNode::imageCallback (
         return;
     }
 
-    tag_detections_publisher_.publish(tag_detector_->detectTags(cv_image_,camera_info));
+    // tag_detections_publisher_.publish(tag_detector_->detectTags(cv_image_,camera_info));
+    // tag_detector_->detectTags(cv_image_,camera_info);
+    tag_detector_->updateDetections(cv_image_);
+
+    publishBundleTagTransforms(camera_info, image_rect->header, "camera");
 
     calibration_datum detections(tag_detector_->getDetections());
 
@@ -208,6 +331,10 @@ void QNode::imageCallback (
     if(detections.tags.size() > 1 && 
        !tooSimilarToPrevious(detections))
     {
+        detections.camera_name = "camera_" + std::to_string(calibration_data.size());
+        publishBundleTagTransforms(camera_info, image_rect->header,
+                                   detections.camera_name);
+
         calibration_data.push_back(detections);
     }
     
@@ -237,17 +364,12 @@ void QNode::imageCallback (
  */
 std::vector<calibration_datum> QNode::cleanCalibrationData(std::set<int> tags_to_calibrate) const
 {
-    // std::cout << "Cleaning calibration data, keeping only: ";
-    // for(int t: tags_to_calibrate)
-    // {
-    //     std::cout << t << ", ";
-    // }
-    // std::cout << "\n";
     std::vector<calibration_datum> cleaned_calibration_data;
 
     for(const calibration_datum &original_datum: calibration_data)
     {
         calibration_datum cleaned_datum;
+        cleaned_datum.camera_name = original_datum.camera_name;
         for(const tag_for_calibration &orig_tag: original_datum.tags)
         {
             if(tags_to_calibrate.count(orig_tag.id))
@@ -272,13 +394,32 @@ void QNode::calibrateBundle(int bundle_id)
     auto data = cleanCalibrationData(std::set<int>(tag_ids.begin(), tag_ids.end()));
 
     std::map<int, raw_pose> tag_poses;
-    std::map<int, raw_pose> camera_poses;
+    std::map<std::string, raw_pose> camera_poses;
 
-    tag_poses[tag_ids[0]].translation = std::vector<double>{0,0,0};
-    tag_poses[tag_ids[0]].quaternion = std::vector<double>{0,0,0,1};
+    tag_poses[tag_ids[0]] = raw_pose();
 
-    geometry_msgs::TransformStamped transform;
-    transform = tf_buffer.lookupTransform("tag_1", "tag_2", ros::Time(0));
+    std::cout << "Initial tag poses: \n";
+    std::string master_tag = "tag_" + std::to_string(tag_ids[0]);
+
+    for(int i=1; i<tag_ids.size(); i++)
+    {
+        geometry_msgs::TransformStamped transform;
+        std::string this_tag = "tag_" + std::to_string(tag_ids[i]);
+        transform = tf_buffer.lookupTransform(master_tag, this_tag, ros::Time(0));
+        tag_poses[tag_ids[i]] = raw_pose(transform);
+        std::cout << "tag " << tag_ids[i] << ": " << tag_poses[tag_ids[i]] << "\n";
+    }
+
+    for(const auto &datum: data)
+    {
+        geometry_msgs::TransformStamped transform;
+
+        transform = tf_buffer.lookupTransform(master_tag, datum.camera_name, ros::Time(0));
+        camera_poses[datum.camera_name] = raw_pose(transform);
+        std::cout << datum.camera_name << ": " << camera_poses[datum.camera_name] << "\n";
+        
+    }
+
     std::cout << "Calibration data size: " << data.size() << "\n";
 
     std::cout << "Calibrating bundle with tag ids: ";    
