@@ -5,6 +5,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include "apriltag_ros/calibration_types.h"
+
 namespace apriltag_ros
 {
     
@@ -33,13 +35,13 @@ namespace apriltag_ros
         
         template <typename T>
         bool operator()(const T* const p_tag_ptr, const T* const q_tag_ptr,
-                        // const T* const p_cam_ptr, const T* const q_cam_ptr, 
+                        const T* const p_cam_ptr, const T* const q_cam_ptr, 
                         T* residual) const {
             // residual[0] = T(10.0) - x[0];
             Eigen::Map<const Eigen::Matrix<T, 3, 1> > p_tag(p_tag_ptr);
             Eigen::Map<const Eigen::Quaternion<T> >   q_tag(q_tag_ptr);
-            // Eigen::Map<const Eigen::Matrix<T, 3, 1> > p_cam(p_cam_ptr);
-            // Eigen::Map<const Eigen::Quaternion<T> >   q_cam(q_cam_ptr);
+            Eigen::Map<const Eigen::Matrix<T, 3, 1> > p_cam(p_cam_ptr);
+            Eigen::Map<const Eigen::Quaternion<T> >   q_cam(q_cam_ptr);
 
             // Eigen::Translation3d v;
             // v.x() = 0;
@@ -59,7 +61,7 @@ namespace apriltag_ros
                 T(1);
 
             Eigen::Matrix<T, 3, 4> extrinsic;
-            extrinsic << q_tag.toRotationMatrix(), p_tag;
+            extrinsic << q_cam.toRotationMatrix() * q_tag.toRotationMatrix(), q_cam.toRotationMatrix() * p_tag + p_cam;
 
 
             Eigen::Matrix<T, 3, 3> intrinsic;
@@ -97,7 +99,8 @@ namespace apriltag_ros
     class CeresBundleSolver
     {
     public:
-        double solve(double x);
+        double solve(const std::vector<calibration_datum> &data, std::map<int, raw_pose> &tag_poses,
+                     std::map<std::string, raw_pose> &cam_poses);
     };
 }
 

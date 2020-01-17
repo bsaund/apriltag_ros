@@ -42,9 +42,19 @@ tag_for_calibration::tag_for_calibration(const apriltag_detection_t* original)
     {
         double im_x, im_y;
         homography_project(original->H, tag_x[i], tag_y[i], &im_x, &im_y);
-        corners[i][0] = im_x;
-        corners[i][1] = im_y;
+        im_corners[i][0] = im_x;
+        im_corners[i][1] = im_y;
     }
+
+    //TODO: HARDCODED
+    double s = 0.05/2;
+    obj_corners = std::array<std::array<double, 2>, 4>{{
+        {-s, -s},
+        {s, -s},
+        {s, s},
+        {-s, s}}
+    };
+
 }
 
 
@@ -191,9 +201,9 @@ bool QNode::tooSimilarToPrevious(const calibration_datum &cur) const
         // std::cout << "\n";
         for(int j=0; j<4; j++)
         {
-            if(std::abs(cur.tags[i].corners[j][0] - prev.tags[i].corners[j][0]) >
+            if(std::abs(cur.tags[i].im_corners[j][0] - prev.tags[i].im_corners[j][0]) >
                PIXEL_MOTION_THRESHOLD_FOR_NEW_CALIBRATION_POINT ||
-               std::abs(cur.tags[i].corners[j][1] - prev.tags[i].corners[j][1]) >
+               std::abs(cur.tags[i].im_corners[j][1] - prev.tags[i].im_corners[j][1]) >
                PIXEL_MOTION_THRESHOLD_FOR_NEW_CALIBRATION_POINT)
             {
                 return false;
@@ -332,6 +342,7 @@ void QNode::imageCallback (
        !tooSimilarToPrevious(detections))
     {
         detections.camera_name = "camera_" + std::to_string(calibration_data.size());
+        detections.camera_info = camera_info;
         publishBundleTagTransforms(camera_info, image_rect->header,
                                    detections.camera_name);
 
@@ -370,6 +381,7 @@ std::vector<calibration_datum> QNode::cleanCalibrationData(std::set<int> tags_to
     {
         calibration_datum cleaned_datum;
         cleaned_datum.camera_name = original_datum.camera_name;
+        cleaned_datum.camera_info = original_datum.camera_info;
         for(const tag_for_calibration &orig_tag: original_datum.tags)
         {
             if(tags_to_calibrate.count(orig_tag.id))
@@ -414,7 +426,8 @@ void QNode::calibrateBundle(int bundle_id)
     {
         geometry_msgs::TransformStamped transform;
 
-        transform = tf_buffer.lookupTransform(master_tag, datum.camera_name, ros::Time(0));
+        // transform = tf_buffer.lookupTransform(master_tag, datum.camera_name, ros::Time(0));
+        transform = tf_buffer.lookupTransform(datum.camera_name, master_tag, ros::Time(0));
         camera_poses[datum.camera_name] = raw_pose(transform);
         std::cout << datum.camera_name << ": " << camera_poses[datum.camera_name] << "\n";
         
@@ -430,5 +443,5 @@ void QNode::calibrateBundle(int bundle_id)
     std::cout << "\n";
 
     CeresBundleSolver s;
-    s.solve(9);
+    s.solve(data, tag_poses, camera_poses);
 }
