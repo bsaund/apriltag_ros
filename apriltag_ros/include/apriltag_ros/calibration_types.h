@@ -17,7 +17,7 @@ namespace apriltag_ros {
             quaternion{0,0,0,1}
         {}
 
-    raw_pose(geometry_msgs::TransformStamped tf):
+    raw_pose(geometry_msgs::TransformStamped tf) :
         translation{tf.transform.translation.x,
                 tf.transform.translation.y,
                 tf.transform.translation.z},
@@ -25,10 +25,9 @@ namespace apriltag_ros {
                     tf.transform.rotation.y,
                     tf.transform.rotation.z,
                     tf.transform.rotation.w}
-        {
-        }
+        {}
 
-        geometry_msgs::Transform toRosTransformMsg()
+    geometry_msgs::Transform toRosTransformMsg() const
         {
             geometry_msgs::Transform tf;
             tf.translation.x = translation[0];

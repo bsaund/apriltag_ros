@@ -48,6 +48,8 @@ double CeresBundleSolver::solve(const std::vector<calibration_datum> &data, std:
     // a(p_tag.data(), q_tag.data(), residual);
 
     // return 0;
+
+    // tag_poses[2].translation[0] += 0.01;
     
 
     std::cout << "setting up problem\n";
@@ -70,7 +72,7 @@ double CeresBundleSolver::solve(const std::vector<calibration_datum> &data, std:
         // double cx=0;
         // double cy=0;
 
-        std::cout << "fx: " << fx << ", fy: " << fy << ", cx: " << cx << ", cy: " << cy << "\n";
+        // std::cout << "fx: " << fx << ", fy: " << fy << ", cx: " << cx << ", cy: " << cy << "\n";
 
 
         raw_pose &cam_pose = cam_poses[datum.camera_name];
@@ -80,11 +82,7 @@ double CeresBundleSolver::solve(const std::vector<calibration_datum> &data, std:
         {
             raw_pose &tag_pose = tag_poses[tag.id];
 
-            // if(tag.id != 1)
-            // {
-            //     continue;
-            // }
-            
+            std::cout << "Adding tag " << tag.id << "\n";
             for(int c=0; c < 4; c++)
             {
                 CostFunction* camera_cost_function_1 =
@@ -92,60 +90,45 @@ double CeresBundleSolver::solve(const std::vector<calibration_datum> &data, std:
                         new CameraCostFunctor(tag.im_corners[c][0], tag.im_corners[c][1],
                                               tag.obj_corners[c][0], tag.obj_corners[c][1],
                                               fx, fy, cx, cy));
+
                 
                 problem.AddResidualBlock(camera_cost_function_1, NULL,
                                          tag_pose.translation.data(), tag_pose.quaternion.data(),
                                          cam_pose.translation.data(), cam_pose.quaternion.data());
             }
             problem.SetParameterization(tag_pose.quaternion.data(), quaternion_local_parameterization);
+
+            //tmp, trying to debug
+
+            // problem.SetParameterBlockConstant(tag_pose.translation.data());
         }
 
         problem.SetParameterization(cam_pose.quaternion.data(), quaternion_local_parameterization);
+
+
+        //tmp, trying to debug
+        // problem.SetParameterBlockConstant(cam_pose.translation.data());
+        // problem.SetParameterBlockConstant(cam_pose.quaternion.data());
+            
     }
 
-        // CostFunction* camera_cost_function_2 =
-        //     new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
-        //         new CameraCostFunctor(im[1][0], im[1][1], obj[c][0], obj[1][1], fx, fy, cx, cy));
-        // problem.AddResidualBlock(camera_cost_function_2, NULL, p_tag.data(), q_tag.data());
 
-        // CostFunction* camera_cost_function_3 =
-        //     new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
-        //         new CameraCostFunctor(im[2][0], im[2][1], obj[c][0], obj[][1], fx, fy, cx, cy));
-        // problem.AddResidualBlock(camera_cost_function_3, NULL, p_tag.data(), q_tag.data());
-
-        // CostFunction* camera_cost_function_4 =
-        //     new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4>(
-        //         new CameraCostFunctor(im[3][0], im[3][1], obj[c][0], obj[c][1], fx, fy, cx, cy));
-        // problem.AddResidualBlock(camera_cost_function_4, NULL, p_tag.data(), q_tag.data());
-    // }
-
-    // problem.SetParameterization(q_tag.data(), quaternion_local_parameterization);
-    // problem.SetParameterization(q_cam.data(), quaternion_local_parameterization);
-
-
-    // problem.SetParameterBlockConstant(p_tag.data());
-    // problem.SetParameterBlockConstant(q_tag.data());
-
-
-
-
-    //TODO: HARD CODED
+    //TODO: HARD CODED base position of tag 1
     problem.SetParameterBlockConstant(tag_poses[1].translation.data());
     problem.SetParameterBlockConstant(tag_poses[1].quaternion.data());
 
-
+    double cost = 0.0;
+    problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
+    std::cout << "Initial problem.Evaluate: " << cost << "\n";
     
     // Run the solver!
     Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_QR;
-    // options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.minimizer_progress_to_stdout = true;
     Solver::Summary summary;
     Solve(options, &problem, &summary);
 
     std::cout << summary.BriefReport() << "\n";
     // std::cout << summary.FullReport() << "\n";
-
     
     for(const auto &tag: tag_poses)
     {

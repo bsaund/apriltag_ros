@@ -9,22 +9,11 @@
 
 namespace apriltag_ros
 {
-    
-    // struct CostFunctor {
-    //     template <typename T>
-    //     bool operator()(const T* const x, T* residual) const {
-    //         residual[0] = T(10.0) - x[0];
-    //         return true;
-    //     }
-    // };
-
+    //Residual for a single object <-> image point correspondence
     struct CameraCostFunctor {
         double im_x, im_y;
         double obj_x, obj_y;
         double fx, fy, cx, cy;
-        Eigen::Matrix<double, 3, 4> camera_intrinsics;
-        // Eigen::Matrix<double, 4, 1> object_point;
-        // Eigen::Isometry3d object_point;
         
         CameraCostFunctor(double im_x_, double im_y_, double obj_x_, double obj_y_,
                           double fx_, double fy_, double cx_, double cy_) :
@@ -43,27 +32,16 @@ namespace apriltag_ros
             Eigen::Map<const Eigen::Matrix<T, 3, 1> > p_cam(p_cam_ptr);
             Eigen::Map<const Eigen::Quaternion<T> >   q_cam(q_cam_ptr);
 
-            // Eigen::Translation3d v;
-            // v.x() = 0;
-            // v.y() = 0;
-            // v.z() = 0;
-            // Eigen::Translation3d v1 = q_tag*v;
-            // Eigen::Isometry3d tag(p_tag, q_tag);
-            // std::cout << "q_tag rotation: " << q_tag.toRotationMatrix() << "\n";
-            // q_tag.toRotationMatrix();
-            // p_tag * q_tag * object_point;
-            // q_tag * object_point;
-
-            Eigen::Matrix<T, 4, 1> object_point;
+            Eigen::Matrix<T, 3, 1> object_point;
             object_point << T(obj_x),
                 T(obj_y),
-                T(0),
-                T(1);
+                T(0);
 
-            Eigen::Matrix<T, 3, 4> extrinsic;
-            extrinsic << q_cam.toRotationMatrix() * q_tag.toRotationMatrix(), q_cam.toRotationMatrix() * p_tag + p_cam;
+            //Transform object point to image frame
+            object_point = q_tag * object_point + p_tag;
+            object_point = q_cam * object_point + p_cam;
 
-
+            
             Eigen::Matrix<T, 3, 3> intrinsic;
             intrinsic(0,0) = T(fx);
             intrinsic(1,1) = T(fy);
@@ -71,31 +49,17 @@ namespace apriltag_ros
             intrinsic(1,2) = T(cy);
             intrinsic(2,2) = T(1);
 
-
-
-
-            // Eigen::Matrix<T, 3, 1> image_output = intrinsic * extrinsic * object_point;
-            Eigen::Matrix<T, 3, 1> image_output = intrinsic * extrinsic * object_point;
+            Eigen::Matrix<T, 3, 1> image_output = intrinsic * object_point;
             
             
-            // residual[0] = image_output(0,0) - T(im_x);
-            // residual[1] = image_output(1,0) - T(im_y);
             residual[0] = image_output(0,0)/image_output(2,0) - T(im_x);
             residual[1] = image_output(1,0)/image_output(2,0) - T(im_y);
-
-
-            // std::cout << "extrinsic\n" << extrinsic << "\n\n";
-            // std::cout << "image output\n" << image_output << "\n\n";
-            // std::cout << "residual:\n" << residual[0] << "\n" << residual[1] << "\n";
-            // residual[0] = T(im_x) - extrinsic(0,3);
-            // residual[1] = T(im_y) - extrinsic(1,3);
             return true;
         }
         
     };
-        
 
-
+    
     class CeresBundleSolver
     {
     public:

@@ -50,9 +50,9 @@ tag_for_calibration::tag_for_calibration(const apriltag_detection_t* original)
     double s = 0.05/2;
     obj_corners = std::array<std::array<double, 2>, 4>{{
         {-s, -s},
-        {s, -s},
-        {s, s},
-        {-s, s}}
+        { s, -s},
+        { s,  s},
+        {-s,  s}}
     };
 
 }
@@ -444,4 +444,13 @@ void QNode::calibrateBundle(int bundle_id)
 
     CeresBundleSolver s;
     s.solve(data, tag_poses, camera_poses);
+
+    for(const auto &id: tag_ids)
+    {
+        geometry_msgs::TransformStamped tag_msg;
+        tag_msg.transform = tag_poses[id].toRosTransformMsg();
+        tag_msg.header.frame_id = "tag_1";
+        tag_msg.child_frame_id = "tag_" + std::to_string(id) + "_calibrated";
+        tf_br.sendTransform(tag_msg);
+    }
 }

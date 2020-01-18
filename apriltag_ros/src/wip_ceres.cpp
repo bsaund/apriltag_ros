@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
     // tag_poses[1].translation = {2, 1, 1};
     // tag_poses[1].quaternion = {0, 0, 0, 1};
 
-    cam_poses["cam_0"].translation = {-2, -1, 1};
+    cam_poses["cam_0"].translation = {-2, -1.5, 0.5};
     cam_poses["cam_0"].quaternion = {0, 0, 0, 1};
 
     tag_for_calibration tag;
