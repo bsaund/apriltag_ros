@@ -10,12 +10,12 @@
 namespace apriltag_ros
 {
     //Residual for a single object <-> image point correspondence
-    struct CameraCostFunctor {
+    struct ReprojectionCostFunctor {
         double im_x, im_y;
         double obj_x, obj_y;
         double fx, fy, cx, cy;
         
-        CameraCostFunctor(double im_x_, double im_y_, double obj_x_, double obj_y_,
+        ReprojectionCostFunctor(double im_x_, double im_y_, double obj_x_, double obj_y_,
                           double fx_, double fy_, double cx_, double cy_) :
             im_x(im_x_), im_y(im_y_), obj_x(obj_x_), obj_y(obj_y_), fx(fx_), fy(fy_), cx(cx_), cy(cy_)
         {
@@ -49,9 +49,10 @@ namespace apriltag_ros
             intrinsic(1,2) = T(cy);
             intrinsic(2,2) = T(1);
 
+            //Project to image coordinates
             Eigen::Matrix<T, 3, 1> image_output = intrinsic * object_point;
             
-            
+            //Resolve scale factor and subtract observed image
             residual[0] = image_output(0,0)/image_output(2,0) - T(im_x);
             residual[1] = image_output(1,0)/image_output(2,0) - T(im_y);
             return true;

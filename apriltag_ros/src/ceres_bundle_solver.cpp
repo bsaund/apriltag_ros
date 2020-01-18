@@ -45,10 +45,10 @@ double CeresBundleSolver::solve(const std::vector<calibration_snapshot> &data, s
             for(int c=0; c < 4; c++)
             {
                 CostFunction* camera_cost_function_1 =
-                    new AutoDiffCostFunction<CameraCostFunctor, 2, 3, 4, 3, 4>(
-                        new CameraCostFunctor(tag.im_corners[c][0], tag.im_corners[c][1],
-                                              tag.obj_corners[c][0], tag.obj_corners[c][1],
-                                              fx, fy, cx, cy));
+                    new AutoDiffCostFunction<ReprojectionCostFunctor, 2, 3, 4, 3, 4>(
+                        new ReprojectionCostFunctor(tag.im_corners[c][0], tag.im_corners[c][1],
+                                                    tag.obj_corners[c][0], tag.obj_corners[c][1],
+                                                    fx, fy, cx, cy));
 
                 
                 problem.AddResidualBlock(camera_cost_function_1, NULL,

@@ -25,69 +25,6 @@ using namespace apriltag_ros;
  *****************************************************************************/
 
 
-/*****************************************************************************
- ** Calibration Data Structures
- *****************************************************************************/
-tag_correspondence::tag_correspondence(const apriltag_detection_t* original)
-    : id(original->id)
-{
-    // Add to image point vector the tag corners in the image frame
-    // Going counterclockwise starting from the bottom left corner
-    double tag_x[4] = {-1,1,1,-1};
-    double tag_y[4] = {1,1,-1,-1}; // Negated because AprilTag tag local
-    // frame has y-axis pointing DOWN
-    // while we use the tag local frame
-    // with y-axis pointing UP
-    for(int i=0; i<4; i++)
-    {
-        double im_x, im_y;
-        homography_project(original->H, tag_x[i], tag_y[i], &im_x, &im_y);
-        im_corners[i][0] = im_x;
-        im_corners[i][1] = im_y;
-    }
-
-    //TODO: HARDCODED
-    double s = 0.05/2;
-    obj_corners = std::array<std::array<double, 2>, 4>{{
-        {-s, -s},
-        { s, -s},
-        { s,  s},
-        {-s,  s}}
-    };
-
-}
-
-
-calibration_snapshot::calibration_snapshot(const zarray_t* detections)
-{
-    for(int i=0; i<zarray_size(detections); i++)
-    {
-        apriltag_detection_t* detection;
-        zarray_get(detections, i, &detection);
-        tags.emplace_back(detection);
-    }
-
-    std::sort(tags.begin(), tags.end(),
-              [](tag_correspondence &lhs, tag_correspondence &rhs) {return lhs.id < rhs.id;});
-}
-
-
-
-std::ostream& apriltag_ros::operator<<(std::ostream& os, const raw_pose &p)
-{
-    os << "trans: " <<
-        p.translation[0] << ", " <<
-        p.translation[1] << ", " <<
-        p.translation[2] << "  rot: " <<
-        p.quaternion[0] << ", " <<
-        p.quaternion[1] << ", " <<
-        p.quaternion[2] << ", " <<
-        p.quaternion[3];
-    return os;
-}
-
-
-
 
 
 
@@ -133,9 +70,17 @@ bool QNode::init() {
     tag_detections_publisher_ =
         nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
 
-        // std::make_unique<TagDetector>(pnh);
+    
+    auto tag_bundle_descriptions = tag_detector_->getTagBundleDescriptions();
+    for (unsigned int j=0; j<tag_bundle_descriptions.size(); j++)
+    {
+        TagBundleDescription bundle = tag_bundle_descriptions[j];
+        for(const int tag_id: bundle.bundleIds())
+        {
+            tag_sizes[tag_id] = bundle.memberSize(tag_id);
+        }
+    }
 
-    // Add your ros communications here.
     start();
     return true;
 }
@@ -186,11 +131,6 @@ bool QNode::tooSimilarToPrevious(const calibration_snapshot &cur) const
         return false;
     }
 
-    // if(cur.tags.size() > 0)
-    // {
-    //     std::cout << "cur corner 0: (" << cur.tags[0].corners[0][0] << ", " << cur.tags[0].corners[0][1] << ")\n";
-    // }
-
     for(int i=0; i<prev.tags.size(); i++)
     {
         if(prev.tags[i].id != cur.tags[i].id)
@@ -223,22 +163,7 @@ void QNode::publishBundleTagTransforms(const sensor_msgs::CameraInfoConstPtr& ca
     AprilTagDetectionArray tag_detection_array;
     std::map<int, AprilTagDetection> tag_detections;
 
-    auto tag_bundle_descriptions = tag_detector_->getTagBundleDescriptions();
 
-    // Returns the size of tag, or -1 if tag not found in any bundle
-    auto tagSize = [&](int tag_id)
-        {
-            for (unsigned int j=0; j<tag_bundle_descriptions.size(); j++)
-            {
-                TagBundleDescription bundle = tag_bundle_descriptions[j];
-
-                if (bundle.id2idx_.find(tag_id) != bundle.id2idx_.end())
-                {
-                    return bundle.memberSize(tag_id);
-                }
-            }
-            return -1.0;
-        };
 
 
     const zarray_t* detections = tag_detector_->getDetections();
@@ -250,21 +175,16 @@ void QNode::publishBundleTagTransforms(const sensor_msgs::CameraInfoConstPtr& ca
         zarray_get(detections, i, &detection);
         int tag_id = detection->id;
 
-        double tag_size = tagSize(tag_id);
-        if(tag_size < 0) // -1 indicates tag not found
+
+        if(tag_sizes.count(tag_id == 0)) // Don't add tags for which we do not know size
         {
             continue;
         }
 
-        // tag_detections[tag_id]
-        AprilTagDetection solution = tag_detector_->solveTagTransform(tag_size, detection, camera_model, header);
-        // geometry_msgs::PoseStamped pose;
-        // pose.pose = solution.pose.pose.pose;
-        // pose.header = solution.pose.header;
-        // tf::Stamped<tf::Transform> tag_transform;
-        // tf::poseStampedMsgToTF(pose, tag_transform);
 
-        // tf_pub.sendTransform(tag_transform, tag_transform.stamp_, camera_frame_name, "tag_" + std::to_string(i));
+        AprilTagDetection solution = tag_detector_->solveTagTransform(tag_sizes[tag_id],
+                                                                      detection, camera_model, header);
+
         geometry_msgs::TransformStamped tf_msg;
         tf_msg.header.stamp = ros::Time::now();
         tf_msg.header.frame_id = camera_frame_name;
@@ -285,17 +205,25 @@ void QNode::publishBundleTagTransforms(const sensor_msgs::CameraInfoConstPtr& ca
         return;
     }
 
+
+    /*
+     *  Set up tf tree such that a tag is always the parent of the camera, 
+     *  and lower id tags are direct parents of larger id tags
+     *  
+     *  This ensure the TF tree spans all tags and camera snapshots, 
+     *  assuming sufficient calibration is gathered.
+     *
+     *  Note: If the camera were the parent, as in continous_detector, the TF tree
+     *  will not chain snapshots together (so all tags would have to be viewed in a single frame)
+     */
     std::map<int, geometry_msgs::TransformStamped>::iterator it = transforms.begin();
     geometry_msgs::TransformStamped base_tf = it->second;
     tf2::Transform tmp;
     tf2::fromMsg(base_tf.transform, tmp);
-    base_tf.transform = tf2::toMsg(tmp.inverse());
+    base_tf.transform = tf2::toMsg(tmp.inverse());  //transform from lowest id tag to camera
     auto camera_name = base_tf.header.frame_id;
     base_tf.header.frame_id = base_tf.child_frame_id;
     base_tf.child_frame_id = camera_name;
-    
-    // tf2::Stamped<tf2::Transform> camera_to_first;
-    // tf2::fromMsg(it->second, camera_to_first);
     tf_br.sendTransform(base_tf);
 
     it++;
@@ -335,7 +263,7 @@ void QNode::imageCallback (
 
     publishBundleTagTransforms(camera_info, image_rect->header, "camera");
 
-    calibration_snapshot detections(tag_detector_->getDetections());
+    calibration_snapshot detections(tag_detector_->getDetections(), tag_sizes);
 
 
     if(detections.tags.size() > 1 && 

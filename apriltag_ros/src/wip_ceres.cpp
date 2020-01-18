@@ -3,19 +3,6 @@
 using namespace apriltag_ros;
 
 
-std::ostream& apriltag_ros::operator<<(std::ostream& os, const raw_pose &p)
-{
-    os << "trans: " <<
-        p.translation[0] << ", " <<
-        p.translation[1] << ", " <<
-        p.translation[2] << "  rot: " <<
-        p.quaternion[0] << ", " <<
-        p.quaternion[1] << ", " <<
-        p.quaternion[2] << ", " <<
-        p.quaternion[3];
-    return os;
-}
-
 
 
 int main(int argc, char **argv) {

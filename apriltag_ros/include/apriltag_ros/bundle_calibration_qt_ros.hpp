@@ -15,7 +15,6 @@
 #include <QStringListModel>
 #include <QPixmap>
 #include "apriltag_ros/common_functions.h"
-#include "common/homography.h"
 #include "apriltag_ros/calibration_types.h"
 
 
@@ -75,10 +74,14 @@ namespace apriltag_ros {
         ros::Publisher tag_detections_publisher_;
         tf2_ros::Buffer tf_buffer;
         tf2_ros::TransformListener tf_listener;
+        tf2_ros::TransformBroadcaster tf_br;
         cv_bridge::CvImagePtr cv_image_;
         QPixmap pixmap;
+
         std::set<int> observed_tags;
-        tf2_ros::TransformBroadcaster tf_br;
+        std::map<int, double> tag_sizes;
+        
+
 
     protected:
         void imageCallback(const sensor_msgs::ImageConstPtr& image_rect,
