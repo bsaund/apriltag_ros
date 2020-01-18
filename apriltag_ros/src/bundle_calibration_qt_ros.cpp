@@ -28,7 +28,7 @@ using namespace apriltag_ros;
 /*****************************************************************************
  ** Calibration Data Structures
  *****************************************************************************/
-tag_for_calibration::tag_for_calibration(const apriltag_detection_t* original)
+tag_correspondence::tag_correspondence(const apriltag_detection_t* original)
     : id(original->id)
 {
     // Add to image point vector the tag corners in the image frame
@@ -58,7 +58,7 @@ tag_for_calibration::tag_for_calibration(const apriltag_detection_t* original)
 }
 
 
-calibration_datum::calibration_datum(const zarray_t* detections)
+calibration_snapshot::calibration_snapshot(const zarray_t* detections)
 {
     for(int i=0; i<zarray_size(detections); i++)
     {
@@ -68,7 +68,7 @@ calibration_datum::calibration_datum(const zarray_t* detections)
     }
 
     std::sort(tags.begin(), tags.end(),
-              [](tag_for_calibration &lhs, tag_for_calibration &rhs) {return lhs.id < rhs.id;});
+              [](tag_correspondence &lhs, tag_correspondence &rhs) {return lhs.id < rhs.id;});
 }
 
 
@@ -171,14 +171,14 @@ void QNode::addToObservedSet(int id)
 }
 
 
-bool QNode::tooSimilarToPrevious(const calibration_datum &cur) const
+bool QNode::tooSimilarToPrevious(const calibration_snapshot &cur) const
 {
     if(calibration_data.size() == 0)
     {
         return false;
     }
 
-    const calibration_datum &prev = calibration_data.back();
+    const calibration_snapshot &prev = calibration_data.back();
 
     
     if(prev.tags.size() != cur.tags.size())
@@ -335,7 +335,7 @@ void QNode::imageCallback (
 
     publishBundleTagTransforms(camera_info, image_rect->header, "camera");
 
-    calibration_datum detections(tag_detector_->getDetections());
+    calibration_snapshot detections(tag_detector_->getDetections());
 
 
     if(detections.tags.size() > 1 && 
@@ -352,7 +352,7 @@ void QNode::imageCallback (
     std::vector<zarray_t> calibration_data;
 
     visible_tags.clear();
-    for(const tag_for_calibration &tag: detections.tags)
+    for(const tag_correspondence &tag: detections.tags)
     {
         addToObservedSet(tag.id);
         visible_tags.insert(tag.id);
@@ -373,16 +373,16 @@ void QNode::imageCallback (
 /*
  *  Remove all tags that are not in the bundle to calibrate
  */
-std::vector<calibration_datum> QNode::cleanCalibrationData(std::set<int> tags_to_calibrate) const
+std::vector<calibration_snapshot> QNode::cleanCalibrationData(std::set<int> tags_to_calibrate) const
 {
-    std::vector<calibration_datum> cleaned_calibration_data;
+    std::vector<calibration_snapshot> cleaned_calibration_data;
 
-    for(const calibration_datum &original_datum: calibration_data)
+    for(const calibration_snapshot &original_datum: calibration_data)
     {
-        calibration_datum cleaned_datum;
+        calibration_snapshot cleaned_datum;
         cleaned_datum.camera_name = original_datum.camera_name;
         cleaned_datum.camera_info = original_datum.camera_info;
-        for(const tag_for_calibration &orig_tag: original_datum.tags)
+        for(const tag_correspondence &orig_tag: original_datum.tags)
         {
             if(tags_to_calibrate.count(orig_tag.id))
             {

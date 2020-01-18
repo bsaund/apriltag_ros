@@ -4,7 +4,7 @@
 using namespace apriltag_ros;
 using namespace ceres;
 
-double CeresBundleSolver::solve(const std::vector<calibration_datum> &data, std::map<int, raw_pose> &tag_poses,
+double CeresBundleSolver::solve(const std::vector<calibration_snapshot> &data, std::map<int, raw_pose> &tag_poses,
                                 std::map<std::string, raw_pose> &cam_poses, int fixed_tag_id)
 {
 

@@ -48,14 +48,14 @@ namespace apriltag_ros {
         QPixmap& getPixmap();
         std::set<int> visible_tags;
 
-        std::vector<calibration_datum> calibration_data;
+        std::vector<calibration_snapshot> calibration_data;
 
     public:
         const std::vector<TagBundleDescription>& getTagBundleDescriptions()
         {
             return tag_detector_->getTagBundleDescriptions();
         }
-        std::vector<calibration_datum> cleanCalibrationData(std::set<int> tags_to_calibrate) const;
+        std::vector<calibration_snapshot> cleanCalibrationData(std::set<int> tags_to_calibrate) const;
         void calibrateBundle(int bundle_id);
 
 
@@ -88,7 +88,7 @@ namespace apriltag_ros {
                                         std::string camera_frame_name="camera");
         
         void addToObservedSet(int id);
-        bool tooSimilarToPrevious(const calibration_datum &cur) const;
+        bool tooSimilarToPrevious(const calibration_snapshot &cur) const;
             
 
     };

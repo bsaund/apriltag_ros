@@ -52,9 +52,6 @@ add_compile_options("-O3" "-funsafe-loop-optimizations" "-fsee" "-funroll-loops"
 # endif()
 
 
-catkin_python_setup()
-
-
 add_message_files(
   FILES
   AprilTagDetection.msg
@@ -130,23 +127,8 @@ add_dependencies(${PROJECT_NAME}_single_image_client_node ${PROJECT_NAME}_genera
 target_link_libraries(${PROJECT_NAME}_single_image_client_node ${PROJECT_NAME}_common ${catkin_LIBRARIES})
 
 
-# add_executable(${PROJECT_NAME}_calibrate_bundle_node src/${PROJECT_NAME}_calibrate_bundle_node.cpp)
-# target_link_libraries(${PROJECT_NAME}_calibrate_bundle_node ${PROJECT_NAME}_bundle_calibrator ${catkin_LIBRARIES})
-
-# add_executable(${PROJECT_NAME}_calibrate_bundle_service src/calibrate_bundle_service.cpp)
-# target_link_libraries(${PROJECT_NAME}_calibrate_bundle_service
-#   ${catkin_LIBRARIES})
-# add_dependencies(${PROJECT_NAME}_calibrate_bundle_service ${PROJECT_NAME}_generate_messages_cpp)
-
-# add_executable(bundle_calibration_gui src/bundle_calibration_gui.cpp)
-# target_link_libraries(bundle_calibration_gui ${PROJECT_NAME}_bundle_calibrator ${catkin_LIBRARIES})
-
 if(Qt5_FOUND AND CERES_FOUND)
   include_directories(${CERES_INCLUDE_DIRS})
-  add_library(${PROJECT_NAME}_bundle_calibrator src/bundle_calibrator.cpp)
-  target_link_libraries(${PROJECT_NAME}_bundle_calibrator ${PROJECT_NAME}_common ${catkin_LIBRARIES})
-
-  
   include_directories(${Qt5Core_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS})
   include_directories(${CMAKE_CURRENT_BINARY_DIR}) # Needed to pick up ui files in build dir
 

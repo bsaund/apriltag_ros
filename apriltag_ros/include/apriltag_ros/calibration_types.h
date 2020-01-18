@@ -52,24 +52,24 @@ namespace apriltag_ros {
      *  These are easier to work with than zarrays defined in 
      *  the apriltag library
      */
-    struct tag_for_calibration
+    struct tag_correspondence
     {
         int id;
 
         std::array<std::array<double, 2>, 4> im_corners;
         std::array<std::array<double, 2>, 4> obj_corners;
 
-        tag_for_calibration(const apriltag_detection_t* original);
-        tag_for_calibration() = default;
+        tag_correspondence(const apriltag_detection_t* original);
+        tag_correspondence() = default;
     };
     
-    struct calibration_datum
+    struct calibration_snapshot
     {
         std::string camera_name;
-        std::vector<tag_for_calibration> tags;
+        std::vector<tag_correspondence> tags;
         sensor_msgs::CameraInfoConstPtr camera_info;
-        calibration_datum(const zarray_t* detections);
-        calibration_datum() = default;
+        calibration_snapshot(const zarray_t* detections);
+        calibration_snapshot() = default;
     };
 }
 

@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 
     CeresBundleSolver s;
 
-    std::vector<calibration_datum> data;
+    std::vector<calibration_snapshot> data;
 
     std::map<int, raw_pose> tag_poses;
     std::map<std::string, raw_pose> cam_poses;
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     cam_poses["cam_0"].translation = {-2, -1.5, 0.5};
     cam_poses["cam_0"].quaternion = {0, 0, 0, 1};
 
-    tag_for_calibration tag;
+    tag_correspondence tag;
     tag.id = 1;
     tag.im_corners = std::array<std::array<double,2 >, 4>{{
         {5,5},
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     };
 
 
-    calibration_datum datum;
+    calibration_snapshot datum;
     datum.tags.push_back(tag);
 
     datum.camera_name = "cam_0";
