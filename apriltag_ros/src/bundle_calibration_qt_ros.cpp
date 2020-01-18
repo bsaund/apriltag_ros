@@ -71,7 +71,7 @@ bool QNode::init() {
         nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
 
     
-    auto tag_bundle_descriptions = tag_detector_->getTagBundleDescriptions();
+    auto tag_bundle_descriptions = getTagBundleDescriptions();
     for (unsigned int j=0; j<tag_bundle_descriptions.size(); j++)
     {
         TagBundleDescription bundle = tag_bundle_descriptions[j];
@@ -326,6 +326,26 @@ std::vector<calibration_snapshot> QNode::cleanCalibrationData(std::set<int> tags
 }
 
 
+void QNode::writeBundle(const TagBundleDescription &bundle, std::map<int, raw_pose> tag_poses) const
+{
+    std::cout <<
+        "COPY THIS INTO THE tags.yaml FILE\n\n\n" <<
+        "    {\n" <<
+        "      name: '" << bundle.name() << "',\n" <<
+        "      layout:\n" <<
+        "        [\n";
+    for(int id: bundle.bundleIds())
+    {
+        std::cout <<
+        "          {id: " << id << ", size: " << bundle.memberSize(id) << ", " << tag_poses[id] << "},\n";
+    }
+    std::cout <<
+        "        ]\n" <<
+        "    }\n\n\n";
+
+}
+
+
 void QNode::calibrateBundle(int bundle_id)
 {
 
@@ -380,4 +400,5 @@ void QNode::calibrateBundle(int bundle_id)
         tag_msg.child_frame_id = "tag_" + std::to_string(id) + "_calibrated";
         tf_br.sendTransform(tag_msg);
     }
+    writeBundle(getTagBundleDescriptions()[bundle_id-1], tag_poses);
 }

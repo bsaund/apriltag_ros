@@ -99,12 +99,12 @@ namespace apriltag_ros {
 
             // Add to object point vector the tag corner coordinates in the bundle frame
             // Going counterclockwise starting from the bottom left corner
-
+            double s = tag_size/2;            
             obj_corners = std::array<std::array<double, 2>, 4>{{
-                    {-tag_size, -tag_size},
-                    { tag_size, -tag_size},
-                    { tag_size,  tag_size},
-                    {-tag_size,  tag_size}}
+                    {-s, -s},
+                    { s, -s},
+                    { s,  s},
+                    {-s,  s}}
             };
 
         }

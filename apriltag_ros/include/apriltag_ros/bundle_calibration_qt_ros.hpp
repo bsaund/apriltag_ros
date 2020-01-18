@@ -55,6 +55,7 @@ namespace apriltag_ros {
             return tag_detector_->getTagBundleDescriptions();
         }
         std::vector<calibration_snapshot> cleanCalibrationData(std::set<int> tags_to_calibrate) const;
+        void writeBundle(const TagBundleDescription &bundle, std::map<int, raw_pose> tag_poses) const;
         void calibrateBundle(int bundle_id);
 
 

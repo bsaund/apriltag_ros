@@ -79,16 +79,14 @@ double CeresBundleSolver::solve(const std::vector<calibration_snapshot> &data, s
     std::cout << summary.BriefReport() << "\n";
     // std::cout << summary.FullReport() << "\n";
     
-    for(const auto &tag: tag_poses)
-    {
-        std::cout << "tag " << tag.first << ": " << tag.second << "\n";
-    }
-    for(const auto &cam: cam_poses)
-    {
-        std::cout << "cam " << cam.first << ": " << cam.second << "\n";
-    }
-
-
+    // for(const auto &tag: tag_poses)
+    // {
+    //     std::cout << "tag " << tag.first << ": " << tag.second << "\n";
+    // }
+    // for(const auto &cam: cam_poses)
+    // {
+    //     std::cout << "cam " << cam.first << ": " << cam.second << "\n";
+    // }
     
     return -1;
 }

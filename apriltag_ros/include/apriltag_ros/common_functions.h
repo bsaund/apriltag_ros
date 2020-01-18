@@ -144,9 +144,9 @@ class TagBundleDescription
     }
     return sizes;
   }
-  int memberID (int tagID) { return tags_[id2idx_[tagID]].id; }
-  double memberSize (int tagID) { return tags_[id2idx_[tagID]].size; }
-  cv::Matx44d memberT_oi (int tagID) { return tags_[id2idx_[tagID]].T_oi; }
+  int memberID (int tagID) const { return tags_[id2idx_.at(tagID)].id; }
+  double memberSize (int tagID) const { return tags_[id2idx_.at(tagID)].size; }
+  cv::Matx44d memberT_oi (int tagID) const { return tags_[id2idx_.at(tagID)].T_oi; }
 
  private:
   // Bundle description
