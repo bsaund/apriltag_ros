@@ -426,7 +426,6 @@ void QNode::calibrateBundle(int bundle_id)
     {
         geometry_msgs::TransformStamped transform;
 
-        // transform = tf_buffer.lookupTransform(master_tag, datum.camera_name, ros::Time(0));
         transform = tf_buffer.lookupTransform(datum.camera_name, master_tag, ros::Time(0));
         camera_poses[datum.camera_name] = raw_pose(transform);
         std::cout << datum.camera_name << ": " << camera_poses[datum.camera_name] << "\n";
@@ -443,7 +442,7 @@ void QNode::calibrateBundle(int bundle_id)
     std::cout << "\n";
 
     CeresBundleSolver s;
-    s.solve(data, tag_poses, camera_poses);
+    s.solve(data, tag_poses, camera_poses, tag_ids[0]);
 
     for(const auto &id: tag_ids)
     {

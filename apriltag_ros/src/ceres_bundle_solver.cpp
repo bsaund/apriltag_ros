@@ -5,52 +5,11 @@ using namespace apriltag_ros;
 using namespace ceres;
 
 double CeresBundleSolver::solve(const std::vector<calibration_datum> &data, std::map<int, raw_pose> &tag_poses,
-             std::map<std::string, raw_pose> &cam_poses)
+                                std::map<std::string, raw_pose> &cam_poses, int fixed_tag_id)
 {
 
     // Build the problem.
     Problem problem;
-
-
-
-
-    // std::vector<double> p_tag{2, 1, 1};
-    // std::vector<double> q_tag{0,0,0,1};
-    // std::vector<double> p_cam{0,0,0};
-    // std::vector<double> q_cam{0,0,0,1};
-
-
-    // std::vector<std::vector<double> > im{
-    //     {5,5},
-    //     {5,-5},
-    //     {-5, -5},
-    //     {-5, 5}
-    // };
-
-    // std::vector<std::vector<double> > obj{
-    //     {1, 1},
-    //     {1, -1},
-    //     {-1, -1},
-    //     {-1, 1}
-    // };
-    // double im_x = 5;
-    // double im_y = 5;
-
-    // double obj_x = 1;
-    // double obj_y = 1;
-
-    // std::cout << "images point is at: " << im_x << ", " << im_y << "\n";
-    // std::cout << "object point is at: " << obj_x << ", " << obj_y << "\n";
-
-
-    // auto a = CameraCostFunctor(im_x, im_y, obj_x, obj_y, fx, fy, cx, cy);
-    // double residual[2];
-    // a(p_tag.data(), q_tag.data(), residual);
-
-    // return 0;
-
-    // tag_poses[2].translation[0] += 0.01;
-    
 
     std::cout << "setting up problem\n";
     ceres::LocalParameterization* quaternion_local_parameterization =
@@ -97,29 +56,19 @@ double CeresBundleSolver::solve(const std::vector<calibration_datum> &data, std:
                                          cam_pose.translation.data(), cam_pose.quaternion.data());
             }
             problem.SetParameterization(tag_pose.quaternion.data(), quaternion_local_parameterization);
-
-            //tmp, trying to debug
-
-            // problem.SetParameterBlockConstant(tag_pose.translation.data());
         }
 
         problem.SetParameterization(cam_pose.quaternion.data(), quaternion_local_parameterization);
-
-
-        //tmp, trying to debug
-        // problem.SetParameterBlockConstant(cam_pose.translation.data());
-        // problem.SetParameterBlockConstant(cam_pose.quaternion.data());
-            
     }
 
 
     //TODO: HARD CODED base position of tag 1
-    problem.SetParameterBlockConstant(tag_poses[1].translation.data());
-    problem.SetParameterBlockConstant(tag_poses[1].quaternion.data());
+    problem.SetParameterBlockConstant(tag_poses[fixed_tag_id].translation.data());
+    problem.SetParameterBlockConstant(tag_poses[fixed_tag_id].quaternion.data());
 
-    double cost = 0.0;
-    problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
-    std::cout << "Initial problem.Evaluate: " << cost << "\n";
+    // double cost = 0.0;
+    // problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
+    // std::cout << "Initial problem.Evaluate: " << cost << "\n";
     
     // Run the solver!
     Solver::Options options;

@@ -64,7 +64,7 @@ namespace apriltag_ros
     {
     public:
         double solve(const std::vector<calibration_datum> &data, std::map<int, raw_pose> &tag_poses,
-                     std::map<std::string, raw_pose> &cam_poses);
+                     std::map<std::string, raw_pose> &cam_poses, int fixed_tag_id);
     };
 }
 

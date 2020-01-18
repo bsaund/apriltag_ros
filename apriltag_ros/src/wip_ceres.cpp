@@ -65,7 +65,12 @@ int main(int argc, char **argv) {
 
     
     
-    s.solve(data, tag_poses, cam_poses);
+    s.solve(data, tag_poses, cam_poses, 1);
+
+
+
+
+    
 }
 
 
