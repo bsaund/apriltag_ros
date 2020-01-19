@@ -326,26 +326,6 @@ std::vector<calibration_snapshot> QNode::cleanCalibrationData(std::set<int> tags
 }
 
 
-void QNode::writeBundle(const TagBundleDescription &bundle, std::map<int, raw_pose> tag_poses) const
-{
-    std::cout <<
-        "COPY THIS INTO THE tags.yaml FILE\n\n\n" <<
-        "    {\n" <<
-        "      name: '" << bundle.name() << "',\n" <<
-        "      layout:\n" <<
-        "        [\n";
-    for(int id: bundle.bundleIds())
-    {
-        std::cout <<
-        "          {id: " << id << ", size: " << bundle.memberSize(id) << ", " << tag_poses[id] << "},\n";
-    }
-    std::cout <<
-        "        ]\n" <<
-        "    }\n\n\n";
-
-}
-
-
 void QNode::calibrateBundle(int bundle_id)
 {
 
@@ -401,4 +381,24 @@ void QNode::calibrateBundle(int bundle_id)
         tf_br.sendTransform(tag_msg);
     }
     writeBundle(getTagBundleDescriptions()[bundle_id-1], tag_poses);
+}
+
+
+void QNode::writeBundle(const TagBundleDescription &bundle, std::map<int, raw_pose> tag_poses) const
+{
+    std::cout <<
+        "\n\nCOPY THIS INTO THE 'tags.yaml' FILE\n\n\n" <<
+        "    {\n" <<
+        "      name: '" << bundle.name() << "',\n" <<
+        "      layout:\n" <<
+        "        [\n";
+    for(int id: bundle.bundleIds())
+    {
+        std::cout <<
+        "          {id: " << id << ", size: " << bundle.memberSize(id) << ", " << tag_poses[id] << "},\n";
+    }
+    std::cout <<
+        "        ]\n" <<
+        "    },\n\n\n";
+
 }

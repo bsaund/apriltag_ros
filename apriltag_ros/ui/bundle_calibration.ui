@@ -63,6 +63,9 @@
         <property name="text">
           <string>Calibrate</string>
         </property>
+        <property name="toolTip">
+          <string>You must select a bundle before calibrating</string>
+        </property>
       </widget>
       <widget class="QWidget" name="tag_selection">
         <property name="geometry">
@@ -76,6 +79,11 @@
         <widget class="QLabel" name="selected_tags_heading">
           <property name="text">
             <string>Which bundle to calibrate?</string>
+          </property>
+        </widget>
+        <widget class="QLabel" name="no_bundle_label">
+          <property name="text">
+            <string>Tags seen with no bundle</string>
           </property>
         </widget>
       </widget>

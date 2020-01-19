@@ -45,6 +45,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     //     on_button_connect_clicked(true);
     // }
     qnode.init();
+    ui.button_start_calibration->setEnabled(false);
     setupBundleCheckboxes();
 }
 
@@ -92,15 +93,17 @@ void MainWindow::setupBundleCheckboxes()
         checkbox_offset += 25;
     }
 
-    QLabel* no_bundle_label = new QLabel("No Bundle", ui.tag_selection);
-    no_bundle_label->move(0, checkbox_offset);
+    checkbox_offset += 10;
+    ui.no_bundle_label->move(0, checkbox_offset);
+    ui.no_bundle_label->setVisible(false);
     checkbox_offset += 25;
-    no_bundle_label->show();
+
 }
 
 void MainWindow::addTagToChecklist(int id)
 {
     std::cout << "Detected new tag: " << id << "\n";
+
 
     if(specified_tags.count(id))
     {
@@ -127,12 +130,21 @@ void MainWindow::addTagToChecklist(int id)
                 QAbstractButton* checkbox = checkboxes.button(checkbox_id);
                 checkbox->setEnabled(true);
                 checkbox->setToolTip("Check box to select this bundle for calibration");
+
+                ui.button_start_calibration->setEnabled(true);
+                ui.button_start_calibration->setToolTip("Calibrated selected bundle");
+
+                if(checkboxes.checkedId() == -1)
+                {
+                    static_cast<QCheckBox*>(checkbox)->setCheckState(Qt::Checked);
+                }
             }
         }
         
         return;
     }
 
+    ui.no_bundle_label->setVisible(true);
     
     QString display_text = QString(("Tag " + std::to_string(id)).c_str());
     // QCheckBox* checkbox = new QCheckBox(display_text, ui.tag_selection);
@@ -185,7 +197,11 @@ void MainWindow::on_button_start_calibration_clicked(bool check)
     
     
     ui.button_start_calibration->setEnabled(false);
+    ui.button_start_calibration->setText("Calibrating...");
     qnode.calibrateBundle(selected_bundle);
+    ui.button_start_calibration->setEnabled(true);
+    ui.button_start_calibration->setText("Calibrate");
+    
     // qnode.calibrateBundle(qnode.getTagBundleDescriptions()[selected_bundle].bundleIds());
     
 }
